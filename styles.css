@@ -1,0 +1,25 @@
+.navbar nav ul {
+    list-style: none;
+    display: flex;
+    gap: 2rem;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .navbar nav ul li {
+    display: flex;
+    align-items: center;
+  }
+  
+  .navbar nav ul li a {
+    text-decoration: none;
+    font-weight: 500;
+    color: #1e1e1e;
+    padding: 0.5rem 1rem;
+    transition: color 0.3s;
+  }
+  
+  .navbar nav ul li a:hover {
+    color: #005792;
+  }
+  

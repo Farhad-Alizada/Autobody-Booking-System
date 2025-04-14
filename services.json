@@ -1,0 +1,18 @@
+[
+    {
+      "name": "Ceramic Coating",
+      "description": "Protect your vehicle’s paint with a glossy shield.",
+      "price": 299
+    },
+    {
+      "name": "Paint Correction",
+      "description": "Removes swirls and minor scratches.",
+      "price": 199
+    },
+    {
+      "name": "Performance Tuning",
+      "description": "Boost your vehicle’s horsepower and torque.",
+      "price": 499
+    }
+  ]
+  
