@@ -1,25 +1,99 @@
-.navbar nav ul {
-    list-style: none;
-    display: flex;
-    gap: 2rem;
-    padding: 0;
-    margin: 0;
-  }
-  
-  .navbar nav ul li {
-    display: flex;
-    align-items: center;
-  }
-  
-  .navbar nav ul li a {
-    text-decoration: none;
-    font-weight: 500;
-    color: #1e1e1e;
-    padding: 0.5rem 1rem;
-    transition: color 0.3s;
-  }
-  
-  .navbar nav ul li a:hover {
-    color: #005792;
-  }
-  
+/* Global */
+body {
+  background: #fff;
+  color: #1e1e1e;
+  font-family: 'Outfit', sans-serif;
+}
+
+/* Sidebar */
+#sidebar {
+  width: 220px;
+  min-height: 100vh;
+}
+#sidebar .nav-link {
+  font-weight: 600;
+  color: #fff;
+}
+#sidebar .nav-link:hover,
+#sidebar .nav-link.text-purple {
+  color: #8a00ff !important;
+}
+
+/* Header */
+header {
+  font-family: 'Outfit', sans-serif;
+}
+
+/* Appointment card colors */
+.card-unassigned {
+  background: #ffe5e5;
+}
+.card-inprogress {
+  background: #fff7e5;
+}
+.card-completed {
+  background: #e5ffe5;
+}
+
+/* Override Bootstrap btn-primary to purple */
+.btn-primary {
+  background-color: #8a00ff;
+  border-color: #8a00ff;
+}
+.btn-primary:hover,
+.btn-primary:focus {
+  background-color: #7200d6;
+  border-color: #7200d6;
+}
+
+/* Utility text classes */
+.text-purple {
+  color: #8a00ff !important;
+}
+.text-white {
+  color: #fff !important;
+}
+
+/* Background helper */
+.bg-black {
+  background-color: #000 !important;
+}
+
+/* Service images */
+.service-img {
+  width: 100%;
+  height: 300px;
+  object-fit: cover;
+}
+
+/* Price ranges */
+.price-range {
+  font-size: 1rem;
+  margin-top: 8px;
+}
+
+/* Feedback rating summary */
+.rating-summary {
+  padding: 0;
+  margin: 0;
+}
+.rating-summary li {
+  margin: 0 1rem;
+  font-weight: 600;
+}
+
+/* Inline radio spacing */
+.form-check-inline {
+  margin-right: 1rem;
+}
+
+/* Dark form fields */
+.form-control.bg-black {
+  background-color: #000;
+}
+.form-control.bg-black:focus {
+  background-color: #000;
+  color: #fff;
+  border-color: #8a00ff;
+  box-shadow: 0 0 0 0.2rem rgba(138, 0, 255, 0.25);
+}
