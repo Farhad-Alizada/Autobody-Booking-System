@@ -40,8 +40,8 @@ if (!empty($_POST['service_id']) && !empty($_POST['service_date']) && !empty($_P
 
     // ✅ STEP 2: If no duplicate, insert into Schedule
     $stmt = $pdo->prepare("INSERT INTO Schedule 
-        (CustomerUserID, OfferingID, StartDate, EndDate, TotalPrice, AdminUserID) 
-        VALUES (:custID, :offID, :start, :end, 0, :adminID)");
+    (CustomerUserID, OfferingID, StartDate, EndDate, TotalPrice, AdminUserID, EmployeeUserID) 
+    VALUES (:custID, :offID, :start, :end, 0, :adminID, :employeeID)");
 
     $stmt->execute([
         ':custID' => $customerID,
@@ -49,6 +49,7 @@ if (!empty($_POST['service_id']) && !empty($_POST['service_date']) && !empty($_P
         ':start' => $startDate,
         ':end' => $endDate,
         ':adminID' => $adminID
+        ':employeeID' => $employeeID
     ]);
 
     header('Location: customer.php?message=booking_success');
