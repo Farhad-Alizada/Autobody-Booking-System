@@ -1,0 +1,17 @@
+
+Field	Value
+Email	ahmedch45@admin.com
+Password	adminpass
+AccessLevel	Admin
+
+
+Field	Value
+Email	richardtan5789@company.com
+Password	employeepass
+AccessLevel	Employee
+
+
+Field	Value
+Email	charlie@example.com
+Password	customerpass
+AccessLevel	Customer

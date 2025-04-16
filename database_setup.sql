@@ -157,7 +157,11 @@ VALUES (3, 'Email', '123 Main Street');
 
 -- 4. Insert a Service Offering (Assuming new OfferingID is 1)
 INSERT INTO ServiceOffering (OfferingName, ServiceDescription, ServicePrice, TotalPrice)
-VALUES ('Basic Wash', 'A basic car wash service', 20.00, 20.00);
+VALUES 
+  ('Vinyl Wrap', 'Full vehicle vinyl wrapping service', 500.00, 500.00),
+  ('Window Tint', 'Professional window tinting', 200.00, 200.00),
+  ('Performance Tuning', 'Enhance vehicle performance with ECU tuning', 350.00, 350.00),
+  ('PPF', 'Paint Protection Film application', 450.00, 450.00);
 
 -- 5. Insert into DealsWith (linking Customer (UserID 3) with Employee (UserID 2))
 INSERT INTO DealsWith (CustomerUserID, EmployeeUserID)
