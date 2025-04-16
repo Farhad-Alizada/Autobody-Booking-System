@@ -2,6 +2,7 @@
 session_start();
 require_once 'db_connect.php';
 
+
 // Check if form data is set
 if (isset($_POST['account_id']) && isset($_POST['password'])) {
     $accountID = $_POST['account_id'];
@@ -14,6 +15,11 @@ if (isset($_POST['account_id']) && isset($_POST['password'])) {
     $stmt->execute();
 
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    // echo "<pre>";
+    // print_r($user);
+    // echo "</pre>";
+    // exit();
 
     if ($user) {
         // Normally you'd store hashed passwords with password_hash() and compare via password_verify().
