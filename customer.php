@@ -108,7 +108,9 @@ $offerings = $stmt->fetchAll(PDO::FETCH_ASSOC);
       alert("✅ Booking successful!");
     } else if (params.get("error") === "invalid_input") {
       alert("⚠️ Please fill out all fields.");
-    }
+    } else if (params.get("error") === "duplicate_booking") {
+    alert("⚠️ You’ve already booked this service at that time.");
+  }
   </script>
 
   <!-- Load Appointments Dynamically -->
