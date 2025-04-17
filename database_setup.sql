@@ -1,191 +1,181 @@
--- database_setup.sql
+-- database_setup.sql  (image‑ready version)
 
-
--- 1. Create the Database and Use It
+-- 1. Create the database and use it
 CREATE DATABASE IF NOT EXISTS AutoBodyBooking;
 USE AutoBodyBooking;
 
--- 2. Create the Users Table (General User Information)
+-- 2. Users
 CREATE TABLE Users (
-    UserID         INT AUTO_INCREMENT PRIMARY KEY,
-    Password       VARCHAR(255) NOT NULL,
-    PhoneNumber    VARCHAR(20),
-    FirstName      VARCHAR(30),
-    LastName       VARCHAR(30),
-    Email          VARCHAR(50) NOT NULL UNIQUE,
-    AccessLevel    ENUM('Admin', 'Employee', 'Customer') NOT NULL,
-    DateCreated    DATETIME DEFAULT CURRENT_TIMESTAMP
+  UserID       INT AUTO_INCREMENT PRIMARY KEY,
+  Password     VARCHAR(255) NOT NULL,
+  PhoneNumber  VARCHAR(20),
+  FirstName    VARCHAR(30),
+  LastName     VARCHAR(30),
+  Email        VARCHAR(50) NOT NULL UNIQUE,
+  AccessLevel  ENUM('Admin','Employee','Customer') NOT NULL,
+  DateCreated  DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- 3. Create the Admin Table (Specialized Admin Attributes)
+-- 3. Admin
 CREATE TABLE Admin (
-    UserID              INT PRIMARY KEY,
-    WebsiteUpdateDate   DATE,
-    AdminNotes          TEXT,
-    FOREIGN KEY (UserID) REFERENCES Users(UserID)
+  UserID            INT PRIMARY KEY,
+  WebsiteUpdateDate DATE,
+  AdminNotes        TEXT,
+  FOREIGN KEY (UserID) REFERENCES Users(UserID)
 );
 
--- 4. Create the Employee Table (Specialized Employee Attributes)
+-- 4. Employee
 CREATE TABLE Employee (
-    UserID         INT PRIMARY KEY,
-    JobTitle       VARCHAR(50),
-    Specialization VARCHAR(150),
-    FOREIGN KEY (UserID) REFERENCES Users(UserID)
+  UserID         INT PRIMARY KEY,
+  JobTitle       VARCHAR(50),
+  Specialization VARCHAR(150),
+  FOREIGN KEY (UserID) REFERENCES Users(UserID)
 );
 
--- 5. Create the Customer Table (Specialized Customer Attributes)
+-- 5. Customer
 CREATE TABLE Customer (
-    UserID           INT PRIMARY KEY,
-    PreferredContact VARCHAR(20),
-    Address          VARCHAR(255),
-    FOREIGN KEY (UserID) REFERENCES Users(UserID)
+  UserID           INT PRIMARY KEY,
+  PreferredContact VARCHAR(20),
+  Address          VARCHAR(255),
+  FOREIGN KEY (UserID) REFERENCES Users(UserID)
 );
 
--- 6. Create the Service Offering Table
+-- 6. ServiceOffering  (★ now stores image path)
 CREATE TABLE ServiceOffering (
-    OfferingID          INT AUTO_INCREMENT PRIMARY KEY,
-    OfferingName        VARCHAR(100),
-    ServiceDescription  TEXT,
-    ServicePrice        DECIMAL(10,2),
-    TotalPrice          DECIMAL(10,2)
+  OfferingID         INT AUTO_INCREMENT PRIMARY KEY,
+  OfferingName       VARCHAR(100),
+  ServiceDescription TEXT,
+  ServicePrice       DECIMAL(10,2),
+  ImagePath          VARCHAR(255),          -- NULL allowed
 );
 
--- 7. Create the Feedback Table (Customer Feedback)
+-- 7. Feedback
 CREATE TABLE Feedback (
-    FeedbackID     INT AUTO_INCREMENT PRIMARY KEY,
-    CustomerUserID INT,
-    FeedbackDate   DATETIME,
-    FeedbackName   VARCHAR(50) DEFAULT NULL,
-    Comments       TEXT,
-    Rating         INT,
-    FOREIGN KEY (CustomerUserID) REFERENCES Customer(UserID)
+  FeedbackID     INT AUTO_INCREMENT PRIMARY KEY,
+  CustomerUserID INT,
+  FeedbackDate   DATETIME,
+  FeedbackName   VARCHAR(50) DEFAULT NULL,
+  Comments       TEXT,
+  Rating         INT,
+  FOREIGN KEY (CustomerUserID) REFERENCES Customer(UserID)
 );
 
--- 8. Create the DiscountCoupon Table
+-- 8. DiscountCoupon
 CREATE TABLE DiscountCoupon (
-    CouponNumber    INT AUTO_INCREMENT PRIMARY KEY,
-    DiscountAmount  DECIMAL(10,2),
-    OfferingID      INT,
-    AdminUserID     INT,
-    FOREIGN KEY (OfferingID) REFERENCES ServiceOffering(OfferingID),
-    FOREIGN KEY (AdminUserID) REFERENCES Admin(UserID)
+  CouponNumber   INT AUTO_INCREMENT PRIMARY KEY,
+  DiscountAmount DECIMAL(10,2),
+  OfferingID     INT,
+  AdminUserID    INT,
+  FOREIGN KEY (OfferingID) REFERENCES ServiceOffering(OfferingID),
+  FOREIGN KEY (AdminUserID) REFERENCES Admin(UserID)
 );
 
--- 9. Create the Schedule Table (Bookings)
---     Now includes a 'Status' column for appointment tracking.
+-- 9. Schedule (Bookings)
 CREATE TABLE Schedule (
-    CustomerUserID  INT,
-    OfferingID      INT,
-    StartDate       DATETIME,
-    EndDate         DATETIME,
-    TotalPrice      DECIMAL(10,2),
-    AdminUserID     INT,
-    Status          ENUM('Scheduled','In Progress','Completed') DEFAULT 'Scheduled',
-    PRIMARY KEY (CustomerUserID, OfferingID, StartDate, EndDate),
-    FOREIGN KEY (CustomerUserID) REFERENCES Customer(UserID),
-    FOREIGN KEY (OfferingID) REFERENCES ServiceOffering(OfferingID),
-    FOREIGN KEY (AdminUserID) REFERENCES Admin(UserID)
+  CustomerUserID INT,
+  OfferingID     INT,
+  StartDate      DATETIME,
+  EndDate        DATETIME,
+  AdminUserID    INT,
+  Status         ENUM('Scheduled','In Progress','Completed') DEFAULT 'Scheduled',
+  PRIMARY KEY (CustomerUserID,OfferingID,StartDate,EndDate),
+  FOREIGN KEY (CustomerUserID) REFERENCES Customer(UserID),
+  FOREIGN KEY (OfferingID)     REFERENCES ServiceOffering(OfferingID),
+  FOREIGN KEY (AdminUserID)    REFERENCES Admin(UserID)
 );
 
--- 10. Create the CustomerDiscountCoupon Table (Many-to-Many between DiscountCoupon and Customer)
+-- 10. CustomerDiscountCoupon
 CREATE TABLE CustomerDiscountCoupon (
-    CouponNumber    INT,
-    CustomerUserID  INT,
-    PRIMARY KEY (CouponNumber, CustomerUserID),
-    FOREIGN KEY (CouponNumber) REFERENCES DiscountCoupon(CouponNumber),
-    FOREIGN KEY (CustomerUserID) REFERENCES Customer(UserID)
+  CouponNumber   INT,
+  CustomerUserID INT,
+  PRIMARY KEY (CouponNumber,CustomerUserID),
+  FOREIGN KEY (CouponNumber)   REFERENCES DiscountCoupon(CouponNumber),
+  FOREIGN KEY (CustomerUserID) REFERENCES Customer(UserID)
 );
 
--- 11. Create the ScheduleEmployee Table (Many-to-Many between Schedule and Employee)
+-- 11. ScheduleEmployee
 CREATE TABLE ScheduleEmployee (
-    CustomerUserID  INT,
-    OfferingID      INT,
-    StartDate       DATETIME,
-    EndDate         DATETIME,
-    EmployeeUserID  INT,
-    PRIMARY KEY (CustomerUserID, OfferingID, StartDate, EndDate, EmployeeUserID),
-    FOREIGN KEY (CustomerUserID, OfferingID, StartDate, EndDate)
-        REFERENCES Schedule(CustomerUserID, OfferingID, StartDate, EndDate),
-    FOREIGN KEY (EmployeeUserID) REFERENCES Employee(UserID)
+  CustomerUserID INT,
+  OfferingID     INT,
+  StartDate      DATETIME,
+  EndDate        DATETIME,
+  EmployeeUserID INT,
+  PRIMARY KEY (CustomerUserID,OfferingID,StartDate,EndDate,EmployeeUserID),
+  FOREIGN KEY (CustomerUserID,OfferingID,StartDate,EndDate)
+      REFERENCES Schedule(CustomerUserID,OfferingID,StartDate,EndDate),
+  FOREIGN KEY (EmployeeUserID) REFERENCES Employee(UserID)
 );
 
--- 12. Create the DealsWith Table (Many-to-Many Relationship Between Customer and Employee)
+-- 12. DealsWith
 CREATE TABLE DealsWith (
-    CustomerUserID  INT,
-    EmployeeUserID  INT,
-    PRIMARY KEY (CustomerUserID, EmployeeUserID),
-    FOREIGN KEY (CustomerUserID) REFERENCES Customer(UserID),
-    FOREIGN KEY (EmployeeUserID) REFERENCES Employee(UserID)
+  CustomerUserID INT,
+  EmployeeUserID INT,
+  PRIMARY KEY (CustomerUserID,EmployeeUserID),
+  FOREIGN KEY (CustomerUserID) REFERENCES Customer(UserID),
+  FOREIGN KEY (EmployeeUserID) REFERENCES Employee(UserID)
 );
 
--- 13. Create the EmployeeAvailability Table
---     This table stores the available time slots set by an employee.
+-- 13. EmployeeAvailability
 CREATE TABLE EmployeeAvailability (
-    AvailabilityID     INT AUTO_INCREMENT PRIMARY KEY,
-    EmployeeUserID     INT,
-    AvailabilityDate   DATE,
-    StartTime          TIME,
-    EndTime            TIME,
-    FOREIGN KEY (EmployeeUserID) REFERENCES Employee(UserID)
+  AvailabilityID   INT AUTO_INCREMENT PRIMARY KEY,
+  EmployeeUserID   INT,
+  AvailabilityDate DATE,
+  StartTime        TIME,
+  EndTime          TIME,
+  FOREIGN KEY (EmployeeUserID) REFERENCES Employee(UserID)
 );
 
--- Sample INSERT Statements (Examples)
+-- =========================================================
+-- Sample data
+-- =========================================================
 
--- 1. Insert an Admin user
-INSERT INTO Users (Password, PhoneNumber, FirstName, LastName, Email, AccessLevel)
-VALUES ('adminpass', '587-000-1111', 'Ahmed', 'Chaudhry', 'ahmedch45@admin.com', 'Admin');
+-- Admin
+INSERT INTO Users (Password,PhoneNumber,FirstName,LastName,Email,AccessLevel)
+VALUES ('adminpass','587-000-1111','Ahmed','Chaudhry','ahmedch45@admin.com','Admin');
+INSERT INTO Admin (UserID,WebsiteUpdateDate,AdminNotes)
+VALUES (1,'2025-03-18','Main Admin account');
 
--- Assuming Admin's UserID is 1
-INSERT INTO Admin (UserID, WebsiteUpdateDate, AdminNotes)
-VALUES (1, '2025-03-18', 'Main Admin account');
+-- Employee
+INSERT INTO Users (Password,PhoneNumber,FirstName,LastName,Email,AccessLevel)
+VALUES ('employeepass','587-111-000','Richard','Tan','richardtan5789@company.com','Employee');
+INSERT INTO Employee (UserID,JobTitle,Specialization)
+VALUES (2,'Mechanic','Auto Repair');
 
--- 2. Insert an Employee user
-INSERT INTO Users (Password, PhoneNumber, FirstName, LastName, Email, AccessLevel)
-VALUES ('employeepass', '587-111-000', 'Richard', 'Tan', 'richardtan5789@company.com', 'Employee');
+-- Customer
+INSERT INTO Users (Password,PhoneNumber,FirstName,LastName,Email,AccessLevel)
+VALUES ('customerpass','825-111-000','Charlie','Angus','charlie@example.com','Customer');
+INSERT INTO Customer (UserID,PreferredContact,Address)
+VALUES (3,'Email','123 Main Street');
 
--- Assuming Employee's UserID is 2
-INSERT INTO Employee (UserID, JobTitle, Specialization)
-VALUES (2, 'Mechanic', 'Auto Repair');
+-- Services (ImagePath defaults to NULL)
+INSERT INTO ServiceOffering (OfferingName,ServiceDescription,ServicePrice)
+VALUES
+  ('Vinyl Wrap','Full vehicle vinyl wrapping service',500.00,500.00),
+  ('Window Tint','Professional window tinting',200.00,200.00),
+  ('Performance Tuning','Enhance vehicle performance with ECU tuning',350.00,350.00),
+  ('PPF','Paint Protection Film application',450.00,450.00);
 
--- 3. Insert a Customer user
-INSERT INTO Users (Password, PhoneNumber, FirstName, LastName, Email, AccessLevel)
-VALUES ('customerpass', '825-111-000', 'Charlie', 'Angus', 'charlie@example.com', 'Customer');
+-- DealsWith
+INSERT INTO DealsWith (CustomerUserID,EmployeeUserID) VALUES (3,2);
 
--- Assuming Customer's UserID is 3
-INSERT INTO Customer (UserID, PreferredContact, Address)
-VALUES (3, 'Email', '123 Main Street');
+-- Schedule
+INSERT INTO Schedule (CustomerUserID,OfferingID,StartDate,EndDate,AdminUserID,Status)
+VALUES (3,1,'2025-03-25 10:00:00','2025-03-25 11:00:00',20.00,1,'Scheduled');
 
--- 4. Insert a Service Offering (Assuming new OfferingID is 1)
-INSERT INTO ServiceOffering (OfferingName, ServiceDescription, ServicePrice, TotalPrice)
-VALUES 
-  ('Vinyl Wrap', 'Full vehicle vinyl wrapping service', 500.00, 500.00),
-  ('Window Tint', 'Professional window tinting', 200.00, 200.00),
-  ('Performance Tuning', 'Enhance vehicle performance with ECU tuning', 350.00, 350.00),
-  ('PPF', 'Paint Protection Film application', 450.00, 450.00);
+-- ScheduleEmployee
+INSERT INTO ScheduleEmployee
+  (CustomerUserID,OfferingID,StartDate,EndDate,EmployeeUserID)
+VALUES (3,1,'2025-03-25 10:00:00','2025-03-25 11:00:00',2);
 
--- 5. Insert into DealsWith (linking Customer (UserID 3) with Employee (UserID 2))
-INSERT INTO DealsWith (CustomerUserID, EmployeeUserID)
-VALUES (3, 2);
+-- Feedback
+INSERT INTO Feedback
+  (CustomerUserID,FeedbackDate,FeedbackName,Comments,Rating)
+VALUES (3,'2025-03-26 15:30:00','Charlie','Great service!',5);
 
--- 6. Insert a Schedule (Booking) with Status (Assuming status defaults to 'Scheduled')
-INSERT INTO Schedule (CustomerUserID, OfferingID, StartDate, EndDate, TotalPrice, AdminUserID, Status)
-VALUES (3, 1, '2025-03-25 10:00:00', '2025-03-25 11:00:00', 20.00, 1, 'Scheduled');
-
--- 7. Insert into ScheduleEmployee (linking the schedule to an employee)
-INSERT INTO ScheduleEmployee (CustomerUserID, OfferingID, StartDate, EndDate, EmployeeUserID)
-VALUES (3, 1, '2025-03-25 10:00:00', '2025-03-25 11:00:00', 2);
-
--- 8. Insert Feedback from a customer, capturing a name as well
-INSERT INTO Feedback (CustomerUserID, FeedbackDate, FeedbackName, Comments, Rating)
-VALUES (3, '2025-03-26 15:30:00', 'Charlie', 'Great service!', 5);
-
--- 9. Insert a DiscountCoupon (Assuming new CouponNumber is 1)
-INSERT INTO DiscountCoupon (DiscountAmount, OfferingID, AdminUserID)
-VALUES (5.00, 1, 1);
-
--- 10. Link a DiscountCoupon to a Customer
-INSERT INTO CustomerDiscountCoupon (CouponNumber, CustomerUserID)
-VALUES (1, 3);
+-- DiscountCoupon + assignment
+INSERT INTO DiscountCoupon (DiscountAmount,OfferingID,AdminUserID)
+VALUES (5.00,1,1);
+INSERT INTO CustomerDiscountCoupon (CouponNumber,CustomerUserID) VALUES (1,3);
 
 -- Sample SELECT Queries (Examples)
 
@@ -196,7 +186,7 @@ SELECT * FROM Users;
 SELECT * FROM ServiceOffering;
 
 -- Retrieve schedule details with customer name and service offering
-SELECT U.FirstName, U.LastName, SO.OfferingName, S.StartDate, S.EndDate, S.TotalPrice, S.Status
+SELECT U.FirstName, U.LastName, SO.OfferingName, S.StartDate, S.EndDate, S.Status
 FROM Schedule S
 JOIN Customer C ON S.CustomerUserID = C.UserID
 JOIN Users U ON C.UserID = U.UserID
@@ -216,7 +206,7 @@ SET PhoneNumber = '647-555-1985'
 WHERE UserID = 3;
 
 UPDATE ServiceOffering
-SET ServicePrice = 22.00, TotalPrice = 22.00
+SET ServicePrice = 22.00, 
 WHERE OfferingID = 1;
 
 -- Sample DELETE Queries (Examples)
@@ -248,7 +238,7 @@ WHERE U.UserID IN (
 
 -- Join in SELECT Example: List all feedback with customer's full name and booking total price
 
-SELECT U.FirstName, U.LastName, F.Comments, F.Rating, S.TotalPrice
+SELECT U.FirstName, U.LastName, F.Comments, F.Rating, 
 FROM Feedback F
 JOIN Customer C ON F.CustomerUserID = C.UserID
 JOIN Users U ON C.UserID = U.UserID
@@ -260,14 +250,8 @@ GROUP BY F.FeedbackID;
 UPDATE ServiceOffering SO
 JOIN DiscountCoupon DC ON SO.OfferingID = DC.OfferingID
 SET SO.ServicePrice = SO.ServicePrice - DC.DiscountAmount,
-    SO.TotalPrice = SO.ServicePrice - DC.DiscountAmount
 WHERE DC.CouponNumber = 1;
 
--- Subquery in UPDATE Example: Increase the total price of a service offering by 10%
-
-UPDATE ServiceOffering
-SET TotalPrice = ServicePrice * 1.10
-WHERE OfferingID = 1;
 
 -- Delete with Subquery Example: Delete schedules for customers whose email domain is 'test.com'
 
@@ -285,7 +269,7 @@ WHERE CustomerUserID IN (
 
 
 CREATE VIEW CustomerBookings AS
-SELECT U.UserID, U.FirstName, U.LastName, S.OfferingID, S.StartDate, S.EndDate, S.TotalPrice
+SELECT U.UserID, U.FirstName, U.LastName, S.OfferingID, S.StartDate, S.EndDate, 
 FROM Users U
 JOIN Customer C ON U.UserID = C.UserID
 JOIN Schedule S ON C.UserID = S.CustomerUserID;

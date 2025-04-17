@@ -102,30 +102,11 @@
   <!-- OUR SERVICES -->
   <section id="services" class="py-5 bg-black">
     <div class="container">
-      <h2 class="mb-4 text-white">
-        Our <span class="text-purple">Services</span>
-      </h2>
-      <div class="row text-center">
-        <div class="col-6 col-md-3 mb-4">
-          <img src="pictures/vinylwrap.png" alt="Vinyl Wrap" class="img-fluid service-img">
-          <p class="mt-2 text-purple">Vinyl Wrap</p>
-          <p class="price-range text-white">$2,000 – $8,799</p>
-        </div>
-        <div class="col-6 col-md-3 mb-4">
-          <img src="pictures/windowtint.png" alt="Window Tint" class="img-fluid service-img">
-          <p class="mt-2 text-purple">Window Tint</p>
-          <p class="price-range text-white">$100 – $275</p>
-        </div>
-        <div class="col-6 col-md-3 mb-4">
-          <img src="pictures/performanceModifications.png" alt="Performance Tuning" class="img-fluid service-img">
-          <p class="mt-2 text-purple">Performance Tuning</p>
-          <p class="price-range text-white">$699 – $2,399</p>
-        </div>
-        <div class="col-6 col-md-3 mb-4">
-          <img src="pictures/ppf.png" alt="PPF" class="img-fluid service-img">
-          <p class="mt-2 text-purple">PPF</p>
-          <p class="price-range text-white">$699 – $6,599</p>
-        </div>
+      <h2 class="mb-4 text-white">Our <span class="text-purple">Services</span></h2>
+  
+      <!--  Main.js will inject cards here  -->
+      <div class="row text-center" id="services-container">
+        <div class="text-white-50">Loading…</div>
       </div>
     </div>
   </section>
@@ -228,7 +209,10 @@
     <p class="mb-0 text-muted">© 2025 WrapLab Auto Styling</p>
   </footer>
 
-  <!-- Bootstrap JS -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+   <!-- Bootstrap JS bundle -->
+   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+   <!-- 👇  run the dynamic service loader -->
+   <script src="main.js"></script>
+ </body>
+ </html>
