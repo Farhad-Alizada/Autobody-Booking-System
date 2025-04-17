@@ -7,7 +7,7 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['AccessLevel'] !== 'Admin') {
   exit();
 }
 
-// fetch employees (unchanged)…
+// fetch employees
 $employees = $pdo->query("
   SELECT U.UserID,
          CONCAT(U.FirstName,' ',U.LastName) AS name,
@@ -52,14 +52,14 @@ $services = $pdo->query("
   <h3 class="text-purple mb-4">Admin Dashboard</h3>
   <ul class="nav flex-column">
     <li class="nav-item mb-2"><a class="nav-link text-white" href="#add-services">Add Services</a></li>
+    <li class="nav-item mb-2"><a class="nav-link text-white" href="#coupon-panel">Coupons</a></li>
     <li class="nav-item mb-2"><a class="nav-link text-white" href="#assign-employees">Employees</a></li>
     <li class="nav-item mt-4"><a class="nav-link text-purple" href="login.html">Log out</a></li>
   </ul>
 </nav>
 
 <div class="container-fluid p-4">
-
-  <!-- Add New Service -->
+  <!-- ========== ADD SERVICE ========== -->
   <section id="add-services" class="mb-5">
     <h3 class="mb-4">Add New Service</h3>
     <form action="add_service.php" method="POST" enctype="multipart/form-data" class="row g-3">
@@ -89,7 +89,7 @@ $services = $pdo->query("
     </form>
   </section>
 
-  <!-- All Services Table -->
+  <!-- ========== ALL SERVICES ========== -->
   <h5 class="mt-4 mb-2">All Services</h5>
   <table class="table table-striped align-middle">
     <thead>
@@ -113,8 +113,7 @@ $services = $pdo->query("
         <td><?=htmlspecialchars($s['OfferingName'])?></td>
         <td><?=htmlspecialchars($s['ServiceDescription'])?></td>
         <td>
-          $<?=number_format($s['MinPrice'],2)?>
-          – $<?=number_format($s['MaxPrice'],2)?>
+          $<?=number_format($s['MinPrice'],2)?> – $<?=number_format($s['MaxPrice'],2)?>
         </td>
         <td class="text-end">
           <a href="edit_service.php?id=<?=$s['OfferingID']?>"
@@ -122,9 +121,7 @@ $services = $pdo->query("
           <form action="delete_service.php" method="POST" class="d-inline">
             <input type="hidden" name="offering_id" value="<?=$s['OfferingID']?>">
             <button class="btn btn-sm btn-outline-danger"
-                    onclick="return confirm('Delete this service?')">
-              Delete
-            </button>
+                    onclick="return confirm('Delete this service?')">Delete</button>
           </form>
         </td>
       </tr>
@@ -132,7 +129,82 @@ $services = $pdo->query("
     </tbody>
   </table>
 
-  <!-- Assign Employees (unchanged) -->
+  <!-- ========== COUPON PANEL ========== -->
+  <section id="coupon-panel" class="mt-5">
+    <h3 class="mb-4">Manage Discount Coupons</h3>
+
+    <!-- Create Coupon Form -->
+    <form id="coupon-form" action="add_coupon.php" method="POST" class="row g-3 mb-4">
+      <div class="col-md-3">
+        <label class="form-label">Discount Amount ($)</label>
+        <input name="amount" type="number" step="0.01" class="form-control" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Service Offering</label>
+        <select name="offering_id" class="form-select" required>
+          <option value="">Choose one…</option>
+          <?php foreach($services as $svc): ?>
+            <option value="<?= $svc['OfferingID'] ?>"
+                    data-max="<?= $svc['MaxPrice'] ?>">
+              <?= htmlspecialchars($svc['OfferingName']) ?>
+              (max $<?=number_format($svc['MaxPrice'],2)?>)
+            </option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+      <input type="hidden" name="admin_id" value="<?= $_SESSION['user']['UserID'] ?>">
+      <div class="col-md-2 align-self-end">
+        <button class="btn btn-primary w-100">Add Coupon</button>
+      </div>
+    </form>
+
+    <!-- Existing Coupons -->
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Coupon #</th>
+          <th>Amount</th>
+          <th>Offering</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php
+          $coupons = $pdo->query("
+            SELECT DC.CouponNumber,
+                   DC.DiscountAmount,
+                   DC.OfferingID,
+                   SO.OfferingName,
+                   SO.MaxPrice
+            FROM DiscountCoupon DC
+            JOIN ServiceOffering SO
+              ON DC.OfferingID = SO.OfferingID
+            WHERE DC.AdminUserID = " . $pdo->quote($_SESSION['user']['UserID'])
+          )->fetchAll(PDO::FETCH_ASSOC);
+
+          foreach($coupons as $c): ?>
+        <tr>
+          <td><?= $c['CouponNumber'] ?></td>
+          <td>$<?= number_format($c['DiscountAmount'],2) ?></td>
+          <td><?= htmlspecialchars($c['OfferingName']) ?></td>
+          <td>
+            <a href="edit_coupon.php?id=<?= $c['CouponNumber'] ?>"
+               class="btn btn-sm btn-outline-secondary me-1">Edit</a>
+            <form action="delete_coupon.php" method="POST" class="d-inline">
+              <input type="hidden" name="coupon_number" value="<?= $c['CouponNumber'] ?>">
+              <button class="btn btn-sm btn-outline-danger"
+                      onclick="return confirm('Delete coupon #<?= $c['CouponNumber'] ?>?')">
+                Delete
+              </button>
+            </form>
+          </td>
+        </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ========== EMPLOYEES ========== -->
   <section id="assign-employees" class="mt-5">
     <h3 class="mb-4">Employees</h3>
     <table class="table table-striped">
@@ -173,10 +245,9 @@ $services = $pdo->query("
       </tbody>
     </table>
   </section>
-
 </div>
 
-<!-- Employee Modal (unchanged) -->
+<!-- Employee Modal -->
 <div class="modal fade" id="employeeModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
     <div class="modal-header">
@@ -196,14 +267,31 @@ $services = $pdo->query("
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-document.querySelectorAll('.view-employee').forEach(btn => {
-  btn.addEventListener('click', () => {
-    ['Name','Email','Phone','Title','Spec','Jobs'].forEach(f => {
-      document.getElementById('emp'+f)
-              .textContent = btn.dataset[f.toLowerCase()];
+  // Prevent discount > max price
+  document.getElementById('coupon-form').addEventListener('submit', function(e) {
+    const amount    = parseFloat(this.amount.value) || 0;
+    const sel       = this.offering_id;
+    const maxPrice  = parseFloat(sel.selectedOptions[0].dataset.max) || 0;
+
+    if (amount > maxPrice) {
+      e.preventDefault();
+      alert(
+        `❗ Discount $${amount.toFixed(2)} cannot exceed ` +
+        `the service’s max price of $${maxPrice.toFixed(2)}.`
+      );
+      this.amount.focus();
+    }
+  });
+
+  // Employee modal wiring
+  document.querySelectorAll('.view-employee').forEach(btn => {
+    btn.addEventListener('click', () => {
+      ['Name','Email','Phone','Title','Spec','Jobs'].forEach(f => {
+        document.getElementById('emp'+f).textContent =
+          btn.dataset[f.toLowerCase()];
+      });
     });
   });
-});
 </script>
 </body>
 </html>
