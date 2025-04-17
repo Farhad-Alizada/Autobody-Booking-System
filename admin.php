@@ -2,17 +2,20 @@
 session_start();
 require_once 'db_connect.php';
 
-// Redirect if not admin
 if (!isset($_SESSION['user']) || $_SESSION['user']['AccessLevel'] !== 'Admin') {
   header('Location: login.html');
   exit();
 }
 
-
+// Get employees
 $stmt = $pdo->prepare("
   SELECT 
-    U.FirstName AS name, 
-    E.JobTitle AS role,
+    U.UserID,
+    CONCAT(U.FirstName, ' ', U.LastName) AS name,
+    U.Email,
+    U.PhoneNumber,
+    E.JobTitle,
+    E.Specialization,
     COUNT(SE.EmployeeUserID) AS jobs
   FROM Employee E
   JOIN Users U ON E.UserID = U.UserID
@@ -21,6 +24,11 @@ $stmt = $pdo->prepare("
 ");
 $stmt->execute();
 $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Get services
+$serviceStmt = $pdo->prepare("SELECT * FROM ServiceOffering");
+$serviceStmt->execute();
+$services = $serviceStmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -34,179 +42,156 @@ $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body class="d-flex">
-  <!-- SIDEBAR -->
-  <nav id="sidebar" class="bg-black text-white p-3">
-    <h3 class="text-purple mb-4">Admin DashBoard</h3>
-    <ul class="nav flex-column">
-      <li class="nav-item mb-2"><a href="#add-services" class="nav-link text-white">Add Services</a></li>
-      <li class="nav-item mb-2"><a href="#search-customers" class="nav-link text-white">Search Customers</a></li>
-      <li class="nav-item mb-2"><a href="#create-coupons" class="nav-link text-white">Create Coupons</a></li>
-      <li class="nav-item mb-2"><a href="#assign-employees" class="nav-link text-white">Assign Employees</a></li>
-      <li class="nav-item mt-4"><a href="login.html" class="nav-link text-purple">Log out</a></li>
-    </ul>
-  </nav>
+<nav id="sidebar" class="bg-black text-white p-3">
+  <h3 class="text-purple mb-4">Admin DashBoard</h3>
+  <ul class="nav flex-column">
+    <li class="nav-item mb-2"><a href="#add-services" class="nav-link text-white">Add Services</a></li>
+    <li class="nav-item mb-2"><a href="#assign-employees" class="nav-link text-white">Assign Employees</a></li>
+    <li class="nav-item mt-4"><a href="login.html" class="nav-link text-purple">Log out</a></li>
+  </ul>
+</nav>
 
-  <div class="container-fluid p-4">
-    <!-- DASHBOARD -->
-    <section id="dashboard" class="mb-5">
-      <h3 class="mb-4">Appointments</h3>
-      <div class="row">
-        <div class="col-md-4 mb-4">
-          <div class="card card-unassigned p-3">
-            <h5>Vehicle: ABC123 – Toyota Camry</h5>
-            <p>Not assigned to any employee.</p>
-            <select class="form-select mb-2">
-              <option>Select Employee…</option>
-              <?php foreach ($employees as $e): ?>
-                <option><?= htmlspecialchars($e['name']) ?></option>
-              <?php endforeach; ?>
-            </select>
-            <button class="btn btn-primary">Assign</button>
-          </div>
-        </div>
-        <div class="col-md-4 mb-4">
-          <div class="card card-inprogress p-3">
-            <h5>Vehicle: DEF456 – Honda Civic</h5>
-            <p>Assigned to Jane.</p>
-            <button class="btn btn-secondary">View Details</button>
-          </div>
-        </div>
-        <div class="col-md-4 mb-4">
-          <div class="card card-completed p-3">
-            <h5>Vehicle: GHI789 – Ford F‑150</h5>
-            <p>Completed by Alex.</p>
-            <button class="btn btn-secondary">See Report</button>
-          </div>
-        </div>
+<div class="container-fluid p-4">
+  <?php if (isset($_GET['success']) && $_GET['success'] === '1'): ?>
+    <div class="alert alert-success">Employee added successfully!</div>
+  <?php endif; ?>
+  <?php if (isset($_GET['service']) && $_GET['service'] === 'added'): ?>
+    <div class="alert alert-success">Service added successfully!</div>
+  <?php endif; ?>
+
+  <!-- ADD SERVICES -->
+  <section id="add-services" class="mb-5">
+    <h3 class="mb-4">Add New Service</h3>
+    <form class="row g-3" enctype="multipart/form-data" action="add_service.php" method="POST">
+      <div class="col-md-4">
+        <label class="form-label">Service Name</label>
+        <input type="text" name="serviceName" class="form-control" required>
       </div>
-    </section>
-
-    <!-- ADD SERVICES -->
-    <section id="add-services" class="mb-5">
-      <h3 class="mb-4">Add New Service</h3>
-      <form class="row g-3" enctype="multipart/form-data" action="#" method="POST">
-        <div class="col-md-4">
-          <label class="form-label">Service Name</label>
-          <input type="text" name="serviceName" class="form-control" required>
-        </div>
-        <div class="col-md-4">
-          <label class="form-label">Description</label>
-          <textarea name="serviceDesc" class="form-control" rows="1" required></textarea>
-        </div>
-        <div class="col-md-2">
-          <label class="form-label">Price Range</label>
-          <input type="text" name="priceRange" class="form-control" required>
-        </div>
-        <div class="col-md-2">
-          <label class="form-label">Upload Image</label>
-          <input type="file" name="serviceImage" class="form-control" accept="image/*" required>
-        </div>
-        <div class="col-12 text-end">
-          <button type="submit" class="btn btn-primary">Add Service</button>
-        </div>
-      </form>
-    </section>
-
-    <!-- SEARCH CUSTOMERS -->
-    <section id="search-customers" class="mb-5">
-      <h3 class="mb-4">Search Customers</h3>
-      <div class="input-group mb-3">
-        <input type="text" class="form-control" placeholder="Enter customer name or ID">
-        <button class="btn btn-primary">Search</button>
+      <div class="col-md-4">
+        <label class="form-label">Description</label>
+        <textarea name="serviceDesc" class="form-control" rows="1" required></textarea>
       </div>
-      <ul class="list-group">
-        <li class="list-group-item">John Smith (ID: C123) – johndoe@example.com</li>
-        <li class="list-group-item">Jane Doe (ID: C456) – janedoe@example.com</li>
-      </ul>
-    </section>
+      <div class="col-md-2">
+        <label class="form-label">Price</label>
+        <input type="number" name="servicePrice" class="form-control" step="0.01" required>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label">Upload Image</label>
+        <input type="file" name="serviceImage" class="form-control" accept="image/*" required>
+      </div>
+      <div class="col-12 text-end">
+        <button type="submit" class="btn btn-primary">Add Service</button>
+      </div>
+    </form>
 
-    <!-- CREATE COUPONS -->
-    <section id="create-coupons" class="mb-5">
-      <h3 class="mb-4">Create Coupon Code</h3>
-      <form class="row g-3">
-        <div class="col-md-3">
-          <label class="form-label">Code</label>
-          <input type="text" class="form-control" placeholder="e.g. SAVE10">
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Discount %</label>
-          <input type="number" class="form-control" placeholder="10">
-        </div>
-        <div class="col-md-3">
-          <label class="form-label">Expiry Date</label>
-          <input type="date" class="form-control">
-        </div>
-        <div class="col-md-3 d-flex align-items-end">
-          <button type="submit" class="btn btn-primary w-100">Create Coupon</button>
-        </div>
-      </form>
-    </section>
+    <!-- Service Display Table -->
+    <h5 class="mt-5">All Services</h5>
+    <table class="table mt-3">
+      <thead>
+        <tr>
+          <th>Service Name</th>
+          <th>Description</th>
+          <th>Price</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php foreach ($services as $service): ?>
+        <tr>
+          <td><?= htmlspecialchars($service['OfferingName']) ?></td>
+          <td><?= htmlspecialchars($service['ServiceDescription']) ?></td>
+          <td>$<?= number_format($service['ServicePrice'], 2) ?></td>
+        </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
+  </section>
 
-    <!-- ASSIGN EMPLOYEES -->
-    <section id="assign-employees" class="mb-5">
-      <h3 class="mb-4">Assign Employees</h3>
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Employee</th>
-            <th>Role</th>
-            <th>Current Jobs</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php foreach ($employees as $e): ?>
-          <tr>
-            <td><?= htmlspecialchars($e['name']) ?></td>
-            <td><?= htmlspecialchars($e['role']) ?></td>
-            <td><?= $e['jobs'] ?></td>
-            <td><button class="btn btn-secondary btn-sm">View & Assign</button></td>
-          </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
-    </section>
-    <?php if (isset($_GET['success']) && $_GET['success'] === '1'): ?>
-  <div class="alert alert-success">Employee added successfully!</div>
-<?php endif; ?>
+  <!-- ASSIGN EMPLOYEES -->
+  <section id="assign-employees" class="mb-5">
+    <h3 class="mb-4">Assign Employees</h3>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Job Title</th>
+          <th>Specialization</th>
+          <th>Jobs</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php foreach ($employees as $e): ?>
+        <tr>
+          <td><?= htmlspecialchars($e['name']) ?></td>
+          <td><?= htmlspecialchars($e['Email']) ?></td>
+          <td><?= htmlspecialchars($e['PhoneNumber']) ?></td>
+          <td><?= htmlspecialchars($e['JobTitle']) ?></td>
+          <td><?= htmlspecialchars($e['Specialization']) ?></td>
+          <td><?= $e['jobs'] ?></td>
+          <td>
+            <button 
+              class="btn btn-secondary btn-sm view-employee" 
+              data-bs-toggle="modal" 
+              data-bs-target="#employeeModal"
+              data-name="<?= htmlspecialchars($e['name']) ?>"
+              data-email="<?= htmlspecialchars($e['Email']) ?>"
+              data-phone="<?= htmlspecialchars($e['PhoneNumber']) ?>"
+              data-title="<?= htmlspecialchars($e['JobTitle']) ?>"
+              data-spec="<?= htmlspecialchars($e['Specialization']) ?>"
+              data-jobs="<?= $e['jobs'] ?>"
+            >View & Assign</button>
+            <form action="delete_employee.php" method="POST" class="d-inline">
+              <input type="hidden" name="user_id" value="<?= $e['UserID'] ?>">
+              <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+            </form>
+          </td>
+        </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
+  </section>
+</div>
 
-<h4 class="mt-5">Add New Employee</h4>
-<form action="add_employee.php" method="POST" class="row g-3 mb-4">
-  <div class="col-md-4">
-    <label for="first_name" class="form-label">First Name</label>
-    <input type="text" name="first_name" class="form-control" required>
+<!-- Employee Info Modal -->
+<div class="modal fade" id="employeeModal" tabindex="-1" aria-labelledby="employeeModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="employeeModalLabel">Employee Info</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p><strong>Name:</strong> <span id="empName"></span></p>
+        <p><strong>Email:</strong> <span id="empEmail"></span></p>
+        <p><strong>Phone:</strong> <span id="empPhone"></span></p>
+        <p><strong>Job Title:</strong> <span id="empTitle"></span></p>
+        <p><strong>Specialization:</strong> <span id="empSpec"></span></p>
+        <p><strong>Jobs Assigned:</strong> <span id="empJobs"></span></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
   </div>
-  <div class="col-md-4">
-    <label for="last_name" class="form-label">Last Name</label>
-    <input type="text" name="last_name" class="form-control" required>
-  </div>
-  <div class="col-md-4">
-    <label for="email" class="form-label">Email</label>
-    <input type="email" name="email" class="form-control" required>
-  </div>
-  <div class="col-md-4">
-    <label for="password" class="form-label">Password</label>
-    <input type="password" name="password" class="form-control" required>
-  </div>
-  <div class="col-md-4">
-    <label for="phone" class="form-label">Phone</label>
-    <input type="text" name="phone" class="form-control" required>
-  </div>
-  <div class="col-md-4">
-    <label for="job_title" class="form-label">Job Title</label>
-    <input type="text" name="job_title" class="form-control" required>
-  </div>
-  <div class="col-md-12">
-    <label for="specialization" class="form-label">Specialization</label>
-    <input type="text" name="specialization" class="form-control" required>
-  </div>
-  <div class="col-12 text-end">
-    <button type="submit" class="btn btn-primary">Add Employee</button>
-  </div>
-</form>
+</div>
 
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const buttons = document.querySelectorAll('.view-employee');
+    buttons.forEach(button => {
+      button.addEventListener('click', function () {
+        document.getElementById('empName').textContent = this.getAttribute('data-name');
+        document.getElementById('empEmail').textContent = this.getAttribute('data-email');
+        document.getElementById('empPhone').textContent = this.getAttribute('data-phone');
+        document.getElementById('empTitle').textContent = this.getAttribute('data-title');
+        document.getElementById('empSpec').textContent = this.getAttribute('data-spec');
+        document.getElementById('empJobs').textContent = this.getAttribute('data-jobs');
+      });
+    });
+  });
+</script>
 </body>
 </html>
