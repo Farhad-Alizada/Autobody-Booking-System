@@ -11,31 +11,40 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['AccessLevel'] !== 'Employee'
 
 $employeeID = $_SESSION['user']['UserID'];
 
-// Get current tasks
-$stmtTasks = $pdo->prepare("
-    SELECT s.ScheduleID, u.Name AS CustomerName, o.OfferingName, s.StartDate, s.Status
-    FROM Schedule s
-    JOIN Users u ON s.CustomerUserID = u.UserID
-    JOIN ServiceOffering o ON s.OfferingID = o.OfferingID
-    JOIN ScheduleEmployee se ON s.ScheduleID = se.ScheduleID
-    WHERE se.EmployeeUserID = :empID
-    AND s.Status IN ('Scheduled', 'In Progress')
-");
-$stmtTasks->execute([':empID' => $employeeID]);
+// Fetch Current Tasks (Scheduled or In Progress)
+$stmtTasks = $pdo->prepare("SELECT 
+    s.CustomerUserID, s.OfferingID, s.StartDate, s.EndDate, s.Status,
+    u.FirstName, u.LastName,
+    o.OfferingName
+FROM Schedule s
+JOIN ScheduleEmployee se ON 
+    s.CustomerUserID = se.CustomerUserID AND 
+    s.OfferingID = se.OfferingID AND 
+    s.StartDate = se.StartDate AND 
+    s.EndDate = se.EndDate
+JOIN Customer c ON s.CustomerUserID = c.UserID
+JOIN Users u ON c.UserID = u.UserID
+JOIN ServiceOffering o ON s.OfferingID = o.OfferingID
+WHERE se.EmployeeUserID = :empID AND s.Status IN ('Scheduled', 'In Progress')");
+$stmtTasks->execute(['empID' => $employeeID]);
 $tasks = $stmtTasks->fetchAll(PDO::FETCH_ASSOC);
 
-// Get completed history
-$stmtHistory = $pdo->prepare("
-    SELECT s.ScheduleID, o.OfferingName, s.StartDate, s.Status, s.Details
-    FROM Schedule s
-    JOIN ServiceOffering o ON s.OfferingID = o.OfferingID
-    JOIN ScheduleEmployee se ON s.ScheduleID = se.ScheduleID
-    WHERE se.EmployeeUserID = :empID
-    AND s.Status = 'Completed'
-");
-$stmtHistory->execute([':empID' => $employeeID]);
+// Fetch Completed Appointment History
+$stmtHistory = $pdo->prepare("SELECT 
+    s.CustomerUserID, s.OfferingID, s.StartDate, s.EndDate, s.Status,
+    o.OfferingName
+FROM Schedule s
+JOIN ScheduleEmployee se ON 
+    s.CustomerUserID = se.CustomerUserID AND 
+    s.OfferingID = se.OfferingID AND 
+    s.StartDate = se.StartDate AND 
+    s.EndDate = se.EndDate
+JOIN ServiceOffering o ON s.OfferingID = o.OfferingID
+WHERE se.EmployeeUserID = :empID AND s.Status = 'Completed'");
+$stmtHistory->execute(['empID' => $employeeID]);
 $history = $stmtHistory->fetchAll(PDO::FETCH_ASSOC);
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -65,21 +74,34 @@ $history = $stmtHistory->fetchAll(PDO::FETCH_ASSOC);
         <table class="table">
           <thead>
             <tr>
-              <th>Appointment</th>
               <th>Customer</th>
               <th>Service</th>
               <th>Date</th>
-              <th>Current Status</th>
+              <th>Status</th>
+              <th>Update</th>
             </tr>
           </thead>
           <tbody>
             <?php foreach ($tasks as $t): ?>
               <tr>
-                <td>#A<?= htmlspecialchars($t['ScheduleID']) ?></td>
-                <td><?= htmlspecialchars($t['CustomerName']) ?></td>
+                <td><?= htmlspecialchars($t['FirstName'] . ' ' . $t['LastName']) ?></td>
                 <td><?= htmlspecialchars($t['OfferingName']) ?></td>
                 <td><?= htmlspecialchars(date('Y-m-d', strtotime($t['StartDate']))) ?></td>
                 <td><span class="badge bg-<?= $t['Status'] === 'Scheduled' ? 'primary' : 'warning' ?>"><?= htmlspecialchars($t['Status']) ?></span></td>
+                <td>
+                  <form action="update_status.php" method="POST" class="d-flex align-items-center">
+                    <input type="hidden" name="customer_id" value="<?= $t['CustomerUserID'] ?>">
+                    <input type="hidden" name="offering_id" value="<?= $t['OfferingID'] ?>">
+                    <input type="hidden" name="start_date" value="<?= $t['StartDate'] ?>">
+                    <input type="hidden" name="end_date" value="<?= $t['EndDate'] ?>">
+                    <select name="new_status" class="form-select form-select-sm me-2" style="width: 120px;">
+                      <option value="Scheduled" <?= $t['Status'] === 'Scheduled' ? 'selected' : '' ?>>Scheduled</option>
+                      <option value="In Progress" <?= $t['Status'] === 'In Progress' ? 'selected' : '' ?>>In Progress</option>
+                      <option value="Completed" <?= $t['Status'] === 'Completed' ? 'selected' : '' ?>>Completed</option>
+                    </select>
+                    <button type="submit" class="btn btn-secondary btn-sm">Update</button>
+                  </form>
+                </td>
               </tr>
             <?php endforeach; ?>
           </tbody>
@@ -106,6 +128,40 @@ $history = $stmtHistory->fetchAll(PDO::FETCH_ASSOC);
           </div>
         </form>
       </section>
+<!-- DISPLAY EXISTING AVAILABILITY WITH DELETE OPTION -->
+<section class="mb-5">
+  <h3 class="mb-3">Your Upcoming Availabilities</h3>
+  <ul class="list-group">
+    <?php
+    $stmtAvail = $pdo->prepare("
+      SELECT AvailabilityID, AvailabilityDate, StartTime, EndTime
+      FROM EmployeeAvailability
+      WHERE EmployeeUserID = :empID
+      ORDER BY AvailabilityDate, StartTime
+    ");
+    $stmtAvail->execute([':empID' => $employeeID]);
+    $availabilities = $stmtAvail->fetchAll(PDO::FETCH_ASSOC);
+
+    if (count($availabilities) > 0):
+      foreach ($availabilities as $slot): ?>
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          📅 <?= htmlspecialchars($slot['AvailabilityDate']) ?> | ⏰ 
+          <?= htmlspecialchars(substr($slot['StartTime'], 0, 5)) ?> - 
+          <?= htmlspecialchars(substr($slot['EndTime'], 0, 5)) ?>
+          
+          <form method="POST" action="delete_availability.php" class="ms-3 mb-0">
+            <input type="hidden" name="availability_id" value="<?= $slot['AvailabilityID'] ?>">
+            <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+          </form>
+        </li>
+    <?php 
+      endforeach;
+    else: ?>
+      <li class="list-group-item">No availability set yet.</li>
+    <?php endif; ?>
+  </ul>
+</section>
+
 
       <section id="appointment-history" class="mb-5">
         <h3 class="mb-4">Appointment History</h3>
@@ -113,12 +169,9 @@ $history = $stmtHistory->fetchAll(PDO::FETCH_ASSOC);
           <?php foreach ($history as $h): ?>
             <div class="col-md-4 mb-4">
               <div class="card p-3">
-                <h5>Appointment: #A<?= htmlspecialchars($h['ScheduleID']) ?></h5>
-                <p>Service: <?= htmlspecialchars($h['OfferingName']) ?></p>
+                <h5>Service: <?= htmlspecialchars($h['OfferingName']) ?></h5>
                 <p>Date: <?= htmlspecialchars(date('Y-m-d', strtotime($h['StartDate']))) ?></p>
-                <p>Status: <span class="badge bg-success"><?= htmlspecialchars($h['Status']) ?></span></p>
-                <p>Details: <?= htmlspecialchars($h['Details']) ?></p>
-                <button class="btn btn-secondary btn-sm">View Full Details</button>
+                <p>Status: <span class="badge bg-success">Completed</span></p>
               </div>
             </div>
           <?php endforeach; ?>

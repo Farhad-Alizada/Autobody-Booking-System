@@ -8,12 +8,19 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['AccessLevel'] !== 'Admin') {
   exit();
 }
 
-// Example dummy values for now (until you plug in real data):
-$employees = [
-  ['name' => 'John', 'role' => 'Mechanic', 'jobs' => 2],
-  ['name' => 'Jane', 'role' => 'Mechanic', 'jobs' => 1],
-  ['name' => 'Alex', 'role' => 'Inspector', 'jobs' => 0],
-];
+
+$stmt = $pdo->prepare("
+  SELECT 
+    U.FirstName AS name, 
+    E.JobTitle AS role,
+    COUNT(SE.EmployeeUserID) AS jobs
+  FROM Employee E
+  JOIN Users U ON E.UserID = U.UserID
+  LEFT JOIN ScheduleEmployee SE ON E.UserID = SE.EmployeeUserID
+  GROUP BY E.UserID
+");
+$stmt->execute();
+$employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -159,6 +166,45 @@ $employees = [
         </tbody>
       </table>
     </section>
+    <?php if (isset($_GET['success']) && $_GET['success'] === '1'): ?>
+  <div class="alert alert-success">Employee added successfully!</div>
+<?php endif; ?>
+
+<h4 class="mt-5">Add New Employee</h4>
+<form action="add_employee.php" method="POST" class="row g-3 mb-4">
+  <div class="col-md-4">
+    <label for="first_name" class="form-label">First Name</label>
+    <input type="text" name="first_name" class="form-control" required>
+  </div>
+  <div class="col-md-4">
+    <label for="last_name" class="form-label">Last Name</label>
+    <input type="text" name="last_name" class="form-control" required>
+  </div>
+  <div class="col-md-4">
+    <label for="email" class="form-label">Email</label>
+    <input type="email" name="email" class="form-control" required>
+  </div>
+  <div class="col-md-4">
+    <label for="password" class="form-label">Password</label>
+    <input type="password" name="password" class="form-control" required>
+  </div>
+  <div class="col-md-4">
+    <label for="phone" class="form-label">Phone</label>
+    <input type="text" name="phone" class="form-control" required>
+  </div>
+  <div class="col-md-4">
+    <label for="job_title" class="form-label">Job Title</label>
+    <input type="text" name="job_title" class="form-control" required>
+  </div>
+  <div class="col-md-12">
+    <label for="specialization" class="form-label">Specialization</label>
+    <input type="text" name="specialization" class="form-control" required>
+  </div>
+  <div class="col-12 text-end">
+    <button type="submit" class="btn btn-primary">Add Employee</button>
+  </div>
+</form>
+
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
