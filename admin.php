@@ -7,8 +7,8 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['AccessLevel'] !== 'Admin') {
   exit();
 }
 
-// Get employees
-$stmt = $pdo->prepare("
+// Fetch all employees
+$employeeStmt = $pdo->prepare("
   SELECT 
     U.UserID,
     CONCAT(U.FirstName, ' ', U.LastName) AS name,
@@ -22,13 +22,13 @@ $stmt = $pdo->prepare("
   LEFT JOIN ScheduleEmployee SE ON E.UserID = SE.EmployeeUserID
   GROUP BY E.UserID
 ");
-$stmt->execute();
-$employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$employeeStmt->execute();
+$employees = $employeeStmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Get services
-$serviceStmt = $pdo->prepare("SELECT * FROM ServiceOffering");
-$serviceStmt->execute();
-$services = $serviceStmt->fetchAll(PDO::FETCH_ASSOC);
+// Fetch all services
+$servicesStmt = $pdo->prepare("SELECT OfferingName, ServiceDescription, ServicePrice FROM ServiceOffering");
+$servicesStmt->execute();
+$services = $servicesStmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -37,7 +37,6 @@ $services = $serviceStmt->fetchAll(PDO::FETCH_ASSOC);
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>WrapLab Admin Dashboard</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -52,63 +51,53 @@ $services = $serviceStmt->fetchAll(PDO::FETCH_ASSOC);
 </nav>
 
 <div class="container-fluid p-4">
-  <?php if (isset($_GET['success']) && $_GET['success'] === '1'): ?>
-    <div class="alert alert-success">Employee added successfully!</div>
-  <?php endif; ?>
-  <?php if (isset($_GET['service']) && $_GET['service'] === 'added'): ?>
-    <div class="alert alert-success">Service added successfully!</div>
-  <?php endif; ?>
 
-  <!-- ADD SERVICES -->
+  <!-- Add New Service -->
   <section id="add-services" class="mb-5">
     <h3 class="mb-4">Add New Service</h3>
-    <form class="row g-3" enctype="multipart/form-data" action="add_service.php" method="POST">
-      <div class="col-md-4">
+    <form class="row g-3" action="add_service.php" method="POST">
+      <div class="col-md-3">
         <label class="form-label">Service Name</label>
         <input type="text" name="serviceName" class="form-control" required>
       </div>
-      <div class="col-md-4">
+      <div class="col-md-5">
         <label class="form-label">Description</label>
-        <textarea name="serviceDesc" class="form-control" rows="1" required></textarea>
+        <input type="text" name="serviceDesc" class="form-control" required>
       </div>
       <div class="col-md-2">
         <label class="form-label">Price</label>
-        <input type="number" name="servicePrice" class="form-control" step="0.01" required>
+        <input type="number" step="0.01" name="priceRange" class="form-control" required>
       </div>
-      <div class="col-md-2">
-        <label class="form-label">Upload Image</label>
-        <input type="file" name="serviceImage" class="form-control" accept="image/*" required>
-      </div>
-      <div class="col-12 text-end">
-        <button type="submit" class="btn btn-primary">Add Service</button>
+      <div class="col-md-2 d-flex align-items-end">
+        <button type="submit" class="btn btn-primary w-100">Add Service</button>
       </div>
     </form>
-
-    <!-- Service Display Table -->
-    <h5 class="mt-5">All Services</h5>
-    <table class="table mt-3">
-      <thead>
-        <tr>
-          <th>Service Name</th>
-          <th>Description</th>
-          <th>Price</th>
-        </tr>
-      </thead>
-      <tbody>
-        <?php foreach ($services as $service): ?>
-        <tr>
-          <td><?= htmlspecialchars($service['OfferingName']) ?></td>
-          <td><?= htmlspecialchars($service['ServiceDescription']) ?></td>
-          <td>$<?= number_format($service['ServicePrice'], 2) ?></td>
-        </tr>
-        <?php endforeach; ?>
-      </tbody>
-    </table>
   </section>
 
-  <!-- ASSIGN EMPLOYEES -->
+  <!-- All Services Table -->
+  <h5 class="mt-4 mb-2">All Services</h5>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Service Name</th>
+        <th>Description</th>
+        <th>Price</th>
+      </tr>
+    </thead>
+    <tbody>
+      <?php foreach ($services as $s): ?>
+        <tr>
+          <td><?= htmlspecialchars($s['OfferingName']) ?></td>
+          <td><?= htmlspecialchars($s['ServiceDescription']) ?></td>
+          <td>$<?= number_format($s['ServicePrice'], 2) ?></td>
+        </tr>
+      <?php endforeach; ?>
+    </tbody>
+  </table>
+
+  <!-- Assign Employees -->
   <section id="assign-employees" class="mb-5">
-    <h3 class="mb-4">Assign Employees</h3>
+    <h3 class="mt-5 mb-4">Assign Employees</h3>
     <table class="table">
       <thead>
         <tr>
@@ -123,38 +112,74 @@ $services = $serviceStmt->fetchAll(PDO::FETCH_ASSOC);
       </thead>
       <tbody>
         <?php foreach ($employees as $e): ?>
-        <tr>
-          <td><?= htmlspecialchars($e['name']) ?></td>
-          <td><?= htmlspecialchars($e['Email']) ?></td>
-          <td><?= htmlspecialchars($e['PhoneNumber']) ?></td>
-          <td><?= htmlspecialchars($e['JobTitle']) ?></td>
-          <td><?= htmlspecialchars($e['Specialization']) ?></td>
-          <td><?= $e['jobs'] ?></td>
-          <td>
-            <button 
-              class="btn btn-secondary btn-sm view-employee" 
-              data-bs-toggle="modal" 
-              data-bs-target="#employeeModal"
-              data-name="<?= htmlspecialchars($e['name']) ?>"
-              data-email="<?= htmlspecialchars($e['Email']) ?>"
-              data-phone="<?= htmlspecialchars($e['PhoneNumber']) ?>"
-              data-title="<?= htmlspecialchars($e['JobTitle']) ?>"
-              data-spec="<?= htmlspecialchars($e['Specialization']) ?>"
-              data-jobs="<?= $e['jobs'] ?>"
-            >View & Assign</button>
-            <form action="delete_employee.php" method="POST" class="d-inline">
-              <input type="hidden" name="user_id" value="<?= $e['UserID'] ?>">
-              <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-            </form>
-          </td>
-        </tr>
+          <tr>
+            <td><?= htmlspecialchars($e['name']) ?></td>
+            <td><?= htmlspecialchars($e['Email']) ?></td>
+            <td><?= htmlspecialchars($e['PhoneNumber']) ?></td>
+            <td><?= htmlspecialchars($e['JobTitle']) ?></td>
+            <td><?= htmlspecialchars($e['Specialization']) ?></td>
+            <td><?= $e['jobs'] ?></td>
+            <td>
+              <button 
+                class="btn btn-secondary btn-sm view-employee" 
+                data-bs-toggle="modal" 
+                data-bs-target="#employeeModal"
+                data-name="<?= htmlspecialchars($e['name']) ?>"
+                data-email="<?= htmlspecialchars($e['Email']) ?>"
+                data-phone="<?= htmlspecialchars($e['PhoneNumber']) ?>"
+                data-title="<?= htmlspecialchars($e['JobTitle']) ?>"
+                data-spec="<?= htmlspecialchars($e['Specialization']) ?>"
+                data-jobs="<?= $e['jobs'] ?>"
+              >View & Assign</button>
+              <form action="delete_employee.php" method="POST" class="d-inline">
+                <input type="hidden" name="user_id" value="<?= $e['UserID'] ?>">
+                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+              </form>
+            </td>
+          </tr>
         <?php endforeach; ?>
       </tbody>
     </table>
+
+    <!-- Add Employee Form -->
+    <h4 class="mt-5">Add New Employee</h4>
+    <form action="add_employee.php" method="POST" class="row g-3 mb-4">
+      <div class="col-md-4">
+        <label class="form-label">First Name</label>
+        <input type="text" name="first_name" class="form-control" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Last Name</label>
+        <input type="text" name="last_name" class="form-control" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Email</label>
+        <input type="email" name="email" class="form-control" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Password</label>
+        <input type="password" name="password" class="form-control" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Phone</label>
+        <input type="text" name="phone" class="form-control" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Job Title</label>
+        <input type="text" name="job_title" class="form-control" required>
+      </div>
+      <div class="col-md-12">
+        <label class="form-label">Specialization</label>
+        <input type="text" name="specialization" class="form-control" required>
+      </div>
+      <div class="col-12 text-end">
+        <button type="submit" class="btn btn-primary">Add Employee</button>
+      </div>
+    </form>
   </section>
 </div>
 
-<!-- Employee Info Modal -->
+<!-- MODAL -->
 <div class="modal fade" id="employeeModal" tabindex="-1" aria-labelledby="employeeModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -169,9 +194,6 @@ $services = $serviceStmt->fetchAll(PDO::FETCH_ASSOC);
         <p><strong>Job Title:</strong> <span id="empTitle"></span></p>
         <p><strong>Specialization:</strong> <span id="empSpec"></span></p>
         <p><strong>Jobs Assigned:</strong> <span id="empJobs"></span></p>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
       </div>
     </div>
   </div>
