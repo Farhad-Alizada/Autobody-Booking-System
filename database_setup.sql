@@ -1,4 +1,4 @@
--- database_setup.sql  (image‑ready version)
+-- database_setup.sql 
 
 -- 1. Create the database and use it
 CREATE DATABASE IF NOT EXISTS AutoBodyBooking;
@@ -25,12 +25,15 @@ CREATE TABLE Admin (
 );
 
 -- 4. Employee
-CREATE TABLE Employee (
-  UserID         INT PRIMARY KEY,
-  JobTitle       VARCHAR(50),
-  Specialization VARCHAR(150),
-  FOREIGN KEY (UserID) REFERENCES Users(UserID)
-);
+CREATE TABLE employee (
+  `UserID`         int(11) NOT NULL,
+  `JobTitle`       varchar(50) DEFAULT NULL,
+  `Specialization` varchar(150) DEFAULT NULL,
+  `Address`        varchar(255) DEFAULT NULL,    -- ← add this line
+  PRIMARY KEY (`UserID`),
+  CONSTRAINT `employee_ibfk_1` FOREIGN KEY (`UserID`) REFERENCES `users`(`UserID`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 
 -- 5. Customer
 CREATE TABLE Customer (
@@ -137,7 +140,7 @@ VALUES (1,'2025-03-18','Main Admin account');
 
 -- Employee
 INSERT INTO Users (Password,PhoneNumber,FirstName,LastName,Email,AccessLevel)
-VALUES ('employeepass','587-111-000','Richard','Tan','richardtan5789@company.com','Employee');
+VALUES ('employeepass','587-111-000','Richard','Tan','richardtan5789@wraplab.com','Employee');
 INSERT INTO Employee (UserID,JobTitle,Specialization)
 VALUES (2,'Mechanic','Auto Repair');
 

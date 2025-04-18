@@ -51,17 +51,22 @@ $coupons = $couponsQ->fetchAll(PDO::FETCH_ASSOC);
 
 // ── fetch employees ──────────────────────────────────────────────────────
 $employees = $pdo->query("
-  SELECT U.UserID,
-         CONCAT(U.FirstName,' ',U.LastName) AS name,
-         U.Email, U.PhoneNumber,
-         E.JobTitle, E.Specialization,
-         COUNT(SE.EmployeeUserID) AS jobs
+  SELECT 
+    U.UserID,
+    CONCAT(U.FirstName,' ',U.LastName) AS name,
+    U.Email,
+    E.Address,
+    E.JobTitle,
+    E.Specialization,
+    COUNT(SE.EmployeeUserID) AS jobs
   FROM Employee E
   JOIN Users U ON E.UserID = U.UserID
   LEFT JOIN ScheduleEmployee SE ON E.UserID = SE.EmployeeUserID
   GROUP BY E.UserID
 ")->fetchAll(PDO::FETCH_ASSOC);
 ?>
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -267,13 +272,13 @@ $employees = $pdo->query("
       </table>
     </section>
 
-    <!-- EMPLOYEES -->
-    <section id="assign-employees" class="mb-5">
+     <!-- ▶︎ Employees -->
+     <section id="assign-employees" class="mb-5">
       <h3 class="mb-4">Employees</h3>
       <table class="table table-striped align-middle">
         <thead>
           <tr>
-            <th>Name</th><th>Email</th><th>Phone</th><th>Job</th>
+            <th>Name</th><th>Email</th><th>Address</th><th>Job</th>
             <th>Specialization</th><th>Jobs</th><th></th>
           </tr>
         </thead>
@@ -282,24 +287,19 @@ $employees = $pdo->query("
           <tr>
             <td><?=htmlspecialchars($e['name'])?></td>
             <td><?=htmlspecialchars($e['Email'])?></td>
-            <td><?=htmlspecialchars($e['PhoneNumber'])?></td>
+            <td><?=htmlspecialchars($e['Address'])?></td>
             <td><?=htmlspecialchars($e['JobTitle'])?></td>
             <td><?=htmlspecialchars($e['Specialization'])?></td>
             <td><?=$e['jobs']?></td>
             <td class="text-end">
-              <button class="btn btn-sm btn-outline-secondary view-employee"
-                      data-bs-toggle="modal" data-bs-target="#employeeModal"
-                      data-name="<?=htmlspecialchars($e['name'])?>"
-                      data-email="<?=htmlspecialchars($e['Email'])?>"
-                      data-phone="<?=htmlspecialchars($e['PhoneNumber'])?>"
-                      data-title="<?=htmlspecialchars($e['JobTitle'])?>"
-                      data-spec="<?=htmlspecialchars($e['Specialization'])?>"
-                      data-jobs="<?=$e['jobs']?>">
-                View
-              </button>
+              <a href="edit_employee.php?id=<?=$e['UserID']?>"
+                 class="btn btn-sm btn-outline-secondary me-1">Edit</a>
               <form action="delete_employee.php" method="POST" class="d-inline">
                 <input type="hidden" name="user_id" value="<?=$e['UserID']?>">
-                <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this employee?')">Delete</button>
+                <button class="btn btn-sm btn-outline-danger"
+                        onclick="return confirm('Delete this employee?')">
+                  Delete
+                </button>
               </form>
             </td>
           </tr>
@@ -308,6 +308,35 @@ $employees = $pdo->query("
       </table>
     </section>
 
+ <!-- ▶︎ Add New Employee -->
+ <section id="add-employee" class="mb-5">
+      <h3 class="mb-4">Add New Employee</h3>
+      <form action="add_employee.php" method="POST" class="row g-3" style="max-width:800px;">
+        <div class="col-md-4">
+          <label class="form-label">First Name</label>
+          <input name="first_name" class="form-control" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Last Name</label>
+          <input name="last_name" class="form-control" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Address</label>
+          <input name="address" class="form-control" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Job Title</label>
+          <input name="job_title" class="form-control" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">Specialization</label>
+          <input name="specialization" class="form-control" required>
+        </div>
+        <div class="col-12 text-end">
+          <button type="submit" class="btn btn-primary">Add Employee</button>
+        </div>
+      </form>
+    </section>
   </div><!-- /.container-fluid -->
 
   <!-- Employee Modal (unchanged) … -->
