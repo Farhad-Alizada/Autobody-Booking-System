@@ -1,58 +1,69 @@
 <?php
 // login.php
 session_start();
-require_once 'db_connect.php'; // your PDO $pdo
+require_once 'db_connect.php';  // your PDO $pdo
 
-// Only respond to POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: login.html');
-    exit;
+  header('Location: login.html');
+  exit;
 }
 
 $email    = trim($_POST['email']    ?? '');
-$password = $_POST['password']      ?? '';
+$password =            $_POST['password'] ?? '';
 
-// 1) missing fields?
+// 1) missing?
 if ($email === '' || $password === '') {
-    header('Location: login.html?error=missing_fields');
-    exit;
+  header('Location: login.html?error=missing');
+  exit;
 }
 
 // 2) lookup user
-$stmt = $pdo->prepare('SELECT UserID, FirstName, LastName, Email, Password, AccessLevel 
-                       FROM Users 
-                       WHERE Email = ?');
+$stmt = $pdo->prepare("SELECT * FROM Users WHERE Email = ?");
 $stmt->execute([$email]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-if (!$user) {
-    header('Location: login.html?error=user_not_found');
-    exit;
+if (! $user) {
+  header('Location: login.html?error=notfound');
+  exit;
 }
 
-// 3) verify password
-if (!password_verify($password, $user['Password'])) {
-    header('Location: login.html?error=invalid_credentials');
-    exit;
+$stored = $user['Password'];
+$ok     = false;
+
+// 3) check bcrypt
+if (password_verify($password, $stored)) {
+  $ok = true;
+}
+// 4) fallback plain‑text for legacy accounts
+elseif ($password === $stored) {
+  $ok = true;
+  // upgrade to bcrypt
+  $newHash = password_hash($password, PASSWORD_DEFAULT);
+  $update  = $pdo->prepare("UPDATE Users SET Password = ? WHERE UserID = ?");
+  $update->execute([$newHash, $user['UserID']]);
 }
 
-// 4) all good — store session (remove password)
+if (! $ok) {
+  header('Location: login.html?error=invalid');
+  exit;
+}
+
+// 5) success!
 unset($user['Password']);
 $_SESSION['user'] = $user;
 
-// 5) redirect by role
 switch ($user['AccessLevel']) {
-    case 'Admin':
-        header('Location: admin.php');
-        break;
-    case 'Employee':
-        header('Location: employee_dashboard.php');
-        break;
-    case 'Customer':
-        header('Location: customer.php');
-        break;
-    default:
-        header('Location: login.html?error=unknown_role');
-        break;
+  case 'Admin':
+    header('Location: admin.php');
+    break;
+  case 'Employee':
+    header('Location: employee.php');
+    break;
+  case 'Customer':
+    header('Location: customer.php');
+    break;
+  default:
+    header('Location: login.html?error=invalid');
+    break;
 }
 exit;

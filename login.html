@@ -4,27 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>WrapLab — Log In</title>
-  
-  <!-- Bootstrap CSS -->
   <link 
     rel="stylesheet"
     href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
   />
-  <!-- Bootstrap Icons -->
-  <link 
-    rel="stylesheet" 
-    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
-  />
-  <!-- Google Fonts -->
   <link 
     href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" 
     rel="stylesheet"
   >
   <link rel="stylesheet" href="styles.css" />
-  <style>
-    .btn-primary { background-color: #8a00ff; border-color: #8a00ff; }
-    .btn-primary:hover { background-color: #7200d6; border-color: #7200d6; }
-  </style>
 </head>
 <body>
 
@@ -50,18 +38,21 @@
     <div class="container">
       <div class="row justify-content-center">
         <div class="col-md-5 col-lg-4">
-          <div id="error-container"></div>
           <div class="card bg-dark border-0">
             <div class="card-body p-4">
               <h2 class="card-title text-center text-white mb-4">Log In</h2>
-              <form action="login.php" method="POST" novalidate>
+
+              <!-- error banner (initially hidden) -->
+              <div id="loginError" class="alert alert-danger" style="display:none;"></div>
+
+              <form action="login.php" method="POST">
                 <div class="mb-3">
                   <label for="email" class="form-label text-white">Email</label>
                   <input 
                     type="email" 
                     name="email" 
-                    id="email"
                     class="form-control bg-black text-white border-secondary" 
+                    id="email" 
                     placeholder="you@example.com" 
                     required
                   >
@@ -71,17 +62,18 @@
                   <input 
                     type="password" 
                     name="password" 
-                    id="password"
                     class="form-control bg-black text-white border-secondary" 
+                    id="password" 
                     placeholder="••••••••" 
                     required
                   >
                 </div>
                 <button type="submit" class="btn btn-primary w-100">Log In</button>
               </form>
+
               <p class="text-center text-white mt-3">
                 Don’t have an account? 
-                <a href="signup.php" class="text-purple">Sign up</a>
+                <a href="signup.html" class="text-purple">Sign up</a>
               </p>
             </div>
           </div>
@@ -105,32 +97,20 @@
   </footer>
 
   <script>
-    // Show any error passed via ?error=CODE
+    // On load, check for ?error=... and show the banner if present
     const params = new URLSearchParams(window.location.search);
     if (params.has('error')) {
-      let msg;
-      switch (params.get('error')) {
-        case 'missing_fields':
-          msg = 'Please provide both email and password.';
-          break;
-        case 'invalid_credentials':
-          msg = 'Email or password is incorrect.';
-          break;
-        case 'user_not_found':
-          msg = 'No account found with that email.';
-          break;
-        case 'unknown_role':
-          msg = 'Your account role is unrecognized.';
-          break;
-        default:
-          msg = 'An unknown error occurred.';
+      let msg = '';
+      switch(params.get('error')) {
+        case 'missing':    msg = 'Please provide both email and password.'; break;
+        case 'notfound':   msg = 'No account found with the email provided.';       break;
+        case 'invalid':    msg = 'Incorrect password.';                     break;
+        default:           msg = 'Login failed.';                           break;
       }
-      document.getElementById('error-container').innerHTML = `
-        <div class="alert alert-danger">${msg}</div>
-      `;
+      const el = document.getElementById('loginError');
+      el.textContent = msg;
+      el.style.display = 'block';
     }
   </script>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
