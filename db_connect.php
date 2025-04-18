@@ -5,7 +5,7 @@
 $host     = 'localhost';
 $dbname   = 'AutoBodyBooking';
 $username = 'root';         // Change if your MySQL username is different
-$password = '';             // Change if you have a MySQL password
+$password = 'Hummer@2124';             // Change if you have a MySQL password
 
 // Data Source Name (DSN)
 $dsn = "mysql:host=$host;dbname=$dbname;charset=utf8mb4";
