@@ -3,7 +3,7 @@ session_start();
 require_once 'db_connect.php';
 
 // Check if user is logged in and is a Customer
-if (!isset($_SESSION['user']) || $_SESSION['user']['AccessLevel'] !== 'Customer') {
+if (!isset($_SESSION['user'])) {
     header("Location: login.php");
     exit();
 }
@@ -13,19 +13,16 @@ $scheduleID = $_GET['schedule_id'] ?? null;
 
 // Fetch appointment details
 $appointment = null;
-$vehicles = [];
 $services = [];
 
 try {
     // Get appointment details
     if ($scheduleID) {
         $stmt = $pdo->prepare("
-            SELECT S.*, SO.OfferingName, SO.ServiceDescription, SO.ServicePrice, 
-                   V.VehicleID, V.Make, V.Model, V.Year
-            FROM Schedule S
-            JOIN ServiceOffering SO ON S.OfferingID = SO.OfferingID
-            JOIN Vehicle V ON S.VehicleID = V.VehicleID
-            WHERE S.ScheduleID = :scheduleID AND S.CustomerUserID = :customerID
+            SELECT s.*, so.OfferingName, so.ServiceDescription, so.MinPrice, so.MaxPrice
+            FROM schedule s
+            JOIN serviceoffering so ON s.OfferingID = so.OfferingID
+            WHERE s.ScheduleID = :scheduleID AND s.CustomerUserID = :customerID
         ");
         $stmt->execute([':scheduleID' => $scheduleID, ':customerID' => $customerID]);
         $appointment = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -35,13 +32,8 @@ try {
         }
     }
 
-    // Get customer's vehicles for the update form
-    $stmt = $pdo->prepare("SELECT VehicleID, Make, Model, Year FROM Vehicle WHERE UserID = :customerID");
-    $stmt->execute([':customerID' => $customerID]);
-    $vehicles = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
     // Get available services
-    $stmt = $pdo->prepare("SELECT OfferingID, OfferingName, ServiceDescription, ServicePrice FROM ServiceOffering");
+    $stmt = $pdo->prepare("SELECT OfferingID, OfferingName, ServiceDescription, MinPrice, MaxPrice FROM serviceoffering");
     $stmt->execute();
     $services = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -54,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         if (isset($_POST['delete'])) {
             // Delete appointment
-            $stmt = $pdo->prepare("DELETE FROM Schedule WHERE ScheduleID = :scheduleID AND CustomerUserID = :customerID");
+            $stmt = $pdo->prepare("DELETE FROM schedule WHERE ScheduleID = :scheduleID AND CustomerUserID = :customerID");
             $stmt->execute([':scheduleID' => $scheduleID, ':customerID' => $customerID]);
 
             $_SESSION['message'] = "Appointment deleted successfully.";
@@ -63,7 +55,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         } elseif (isset($_POST['update'])) {
             // Update appointment
-            $vehicleID = $_POST['vehicle_id'];
             $offeringID = $_POST['service_id'];
             $date = $_POST['appointment_date'];
             $startTime = $_POST['start_time'];
@@ -74,15 +65,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $endDateTime = date('Y-m-d H:i:s', strtotime("$date $endTime"));
 
             $stmt = $pdo->prepare("
-                UPDATE Schedule 
-                SET VehicleID = :vehicleID, 
-                    OfferingID = :offeringID, 
+                UPDATE schedule 
+                SET OfferingID = :offeringID, 
                     StartDate = :startDate, 
                     EndDate = :endDate
                 WHERE ScheduleID = :scheduleID AND CustomerUserID = :customerID
             ");
             $stmt->execute([
-                ':vehicleID' => $vehicleID,
                 ':offeringID' => $offeringID,
                 ':startDate' => $startDateTime,
                 ':endDate' => $endDateTime,
@@ -98,7 +87,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = $e->getMessage();
     }
 }
-
 ?>
 
 <!DOCTYPE html>
@@ -135,19 +123,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <?php foreach ($services as $service): ?>
                                         <option value="<?= $service['OfferingID'] ?>"
                                             <?= $service['OfferingID'] == $appointment['OfferingID'] ? 'selected' : '' ?>>
-                                            <?= $service['OfferingName'] ?> - $<?= number_format($service['ServicePrice'], 2) ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label">Vehicle</label>
-                                <select class="form-select" name="vehicle_id" required>
-                                    <?php foreach ($vehicles as $vehicle): ?>
-                                        <option value="<?= $vehicle['VehicleID'] ?>"
-                                            <?= $vehicle['VehicleID'] == $appointment['VehicleID'] ? 'selected' : '' ?>>
-                                            <?= "{$vehicle['Make']} {$vehicle['Model']} ({$vehicle['Year']})" ?>
+                                            <?= $service['OfferingName'] ?> -
+                                            $<?= number_format($service['MinPrice'], 2) ?> to $<?= number_format($service['MaxPrice'], 2) ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
