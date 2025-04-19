@@ -9,17 +9,27 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['AccessLevel'] !== 'Customer'
     exit();
 }
 
-if (!empty($_POST['service_id']) && !empty($_POST['service_date']) && !empty($_POST['service_time'])) {
+if (!empty($_POST['service_id']) && !empty($_POST['service_date']) && !empty($_POST['service_time']) &&
+    !empty($_POST['vehicle_make']) && !empty($_POST['vehicle_model']) && !empty($_POST['vehicle_year'])) {
+
+    // Get form data
     $serviceID = $_POST['service_id'];
     $date = $_POST['service_date'];
     $time = $_POST['service_time'];
 
+    // Vehicle details
+    $vehicleMake = $_POST['vehicle_make'];
+    $vehicleModel = $_POST['vehicle_model'];
+    $vehicleYear = $_POST['vehicle_year'];
+    $vinNumber = !empty($_POST['vin_number']) ? $_POST['vin_number'] : null;
+
     $startDate = $date . ' ' . $time . ':00';
     $endDate = date('Y-m-d H:i:s', strtotime($startDate . ' +1 hour'));
-    $adminID = 1; // temporary default
+    $adminID = 1; // temporary default for admin
+    $employeeID = 2; // Using ID 2 which exists in your sample data (Richard Tan)
     $customerID = $_SESSION['user']['UserID'];
 
-    // ✅ STEP 1: Check for duplicate before inserting
+    // Check for duplicate booking
     $check = $pdo->prepare("SELECT * FROM Schedule 
         WHERE CustomerUserID = :custID 
         AND OfferingID = :offID 
@@ -33,28 +43,61 @@ if (!empty($_POST['service_id']) && !empty($_POST['service_date']) && !empty($_P
     ]);
 
     if ($check->rowCount() > 0) {
-        // Duplicate found
         header('Location: customer.php?error=duplicate_booking');
         exit();
     }
 
-    // ✅ STEP 2: If no duplicate, insert into Schedule
-    $stmt = $pdo->prepare("INSERT INTO Schedule 
-    (CustomerUserID, OfferingID, StartDate, EndDate, TotalPrice, AdminUserID, EmployeeUserID) 
-    VALUES (:custID, :offID, :start, :end, 0, :adminID, :employeeID)");
+    // First insert vehicle details
+    $stmt_vehicle = $pdo->prepare("INSERT INTO Vehicle 
+        (CustomerUserID, Make, Model, Year, VINNumber) 
+        VALUES (:custID, :make, :model, :year, :vinNumber)");
+    $stmt_vehicle->execute([
+        ':custID' => $customerID,
+        ':make' => $vehicleMake,
+        ':model' => $vehicleModel,
+        ':year' => $vehicleYear,
+        ':vinNumber' => $vinNumber
+    ]);
+    $vehicleID = $pdo->lastInsertId();
 
+    // Then insert into Schedule (without EmployeeUserID)
+    $stmt = $pdo->prepare("INSERT INTO Schedule 
+        (CustomerUserID, OfferingID, StartDate, EndDate, TotalPrice, AdminUserID, VehicleID, Status) 
+        VALUES (:custID, :offID, :start, :end, 0, :adminID, :vehicleID, 'Scheduled')");
     $stmt->execute([
         ':custID' => $customerID,
         ':offID' => $serviceID,
         ':start' => $startDate,
         ':end' => $endDate,
-        ':adminID' => $adminID
-        ':employeeID' => $employeeID
+        ':adminID' => $adminID,
+        ':vehicleID' => $vehicleID
     ]);
 
+    // Get the schedule details for the ScheduleEmployee table
+    $scheduleDetails = [
+        'customerID' => $customerID,
+        'offeringID' => $serviceID,
+        'startDate' => $startDate,
+        'endDate' => $endDate
+    ];
+
+    // Assign employee in ScheduleEmployee table
+    $stmt_employee = $pdo->prepare("INSERT INTO ScheduleEmployee 
+        (CustomerUserID, OfferingID, StartDate, EndDate, EmployeeUserID) 
+        VALUES (:custID, :offID, :start, :end, :empID)");
+    $stmt_employee->execute([
+        ':custID' => $customerID,
+        ':offID' => $serviceID,
+        ':start' => $startDate,
+        ':end' => $endDate,
+        ':empID' => $employeeID
+    ]);
+
+    // Redirect to success page
     header('Location: customer.php?message=booking_success');
     exit();
 } else {
     header('Location: customer.php?error=invalid_input');
     exit();
 }
+?>

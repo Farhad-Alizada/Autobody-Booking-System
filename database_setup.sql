@@ -73,23 +73,38 @@ CREATE TABLE IF NOT EXISTS DiscountCoupon (
 
 -- 9. Schedule (Bookings)
 CREATE TABLE IF NOT EXISTS Schedule (
-                                        CustomerUserID INT,
-                                        OfferingID     INT,
-                                        StartDate      DATETIME,
-                                        EndDate        DATETIME,
-                                        AdminUserID    INT,
-                                        Status         ENUM('Scheduled','In Progress','Completed') DEFAULT 'Scheduled',
-                                        PRIMARY KEY (CustomerUserID,OfferingID,StartDate,EndDate),
-                                        FOREIGN KEY (CustomerUserID) REFERENCES Customer(UserID),
-                                        FOREIGN KEY (OfferingID)     REFERENCES ServiceOffering(OfferingID),
-                                        FOREIGN KEY (AdminUserID)    REFERENCES Admin(UserID)
+                                        CustomerUserID   INT,
+                                        OfferingID       INT,
+                                        StartDate        DATETIME,
+                                        EndDate          DATETIME,
+                                        AdminUserID      INT,
+                                        VehicleID        INT,
+                                        Status           ENUM('Scheduled','In Progress','Completed') DEFAULT 'Scheduled',
+                                        TotalPrice       DECIMAL(10,2),
+                                        PRIMARY KEY (CustomerUserID, OfferingID, StartDate, EndDate),
+                                        FOREIGN KEY (CustomerUserID)   REFERENCES Customer(UserID),
+                                        FOREIGN KEY (OfferingID)       REFERENCES ServiceOffering(OfferingID),
+                                        FOREIGN KEY (AdminUserID)      REFERENCES Admin(UserID),
+                                        FOREIGN KEY (VehicleID)        REFERENCES Vehicle(VehicleID)
 );
+
+CREATE TABLE IF NOT EXISTS Vehicle (
+                                       VehicleID        INT AUTO_INCREMENT PRIMARY KEY,
+                                       CustomerUserID   INT,
+                                       Make             VARCHAR(50),
+                                       Model            VARCHAR(50),
+                                       Year             INT,
+                                       VINNumber        VARCHAR(50),
+                                       Color            VARCHAR(30),
+                                       FOREIGN KEY (CustomerUserID) REFERENCES Customer(UserID)
+);
+
 
 -- 10. CustomerDiscountCoupon
 CREATE TABLE IF NOT EXISTS CustomerDiscountCoupon (
                                                       CouponNumber   INT,
                                                       CustomerUserID INT,
-                                                      PRIMARY KEY (CouponNumber,CustomerUserID),
+                                                      PRIMARY KEY (CouponNumber, CustomerUserID),
                                                       FOREIGN KEY (CouponNumber)   REFERENCES DiscountCoupon(CouponNumber),
                                                       FOREIGN KEY (CustomerUserID) REFERENCES Customer(UserID)
 );
@@ -101,9 +116,9 @@ CREATE TABLE IF NOT EXISTS ScheduleEmployee (
                                                 StartDate      DATETIME,
                                                 EndDate        DATETIME,
                                                 EmployeeUserID INT,
-                                                PRIMARY KEY (CustomerUserID,OfferingID,StartDate,EndDate,EmployeeUserID),
-                                                FOREIGN KEY (CustomerUserID,OfferingID,StartDate,EndDate)
-                                                    REFERENCES Schedule(CustomerUserID,OfferingID,StartDate,EndDate),
+                                                PRIMARY KEY (CustomerUserID, OfferingID, StartDate, EndDate, EmployeeUserID),
+                                                FOREIGN KEY (CustomerUserID, OfferingID, StartDate, EndDate)
+                                                REFERENCES Schedule(CustomerUserID, OfferingID, StartDate, EndDate),
                                                 FOREIGN KEY (EmployeeUserID) REFERENCES Employee(UserID)
 );
 
@@ -111,7 +126,7 @@ CREATE TABLE IF NOT EXISTS ScheduleEmployee (
 CREATE TABLE IF NOT EXISTS DealsWith (
                                          CustomerUserID INT,
                                          EmployeeUserID INT,
-                                         PRIMARY KEY (CustomerUserID,EmployeeUserID),
+                                         PRIMARY KEY (CustomerUserID, EmployeeUserID),
                                          FOREIGN KEY (CustomerUserID) REFERENCES Customer(UserID),
                                          FOREIGN KEY (EmployeeUserID) REFERENCES Employee(UserID)
 );
