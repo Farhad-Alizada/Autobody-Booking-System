@@ -1,3 +1,10 @@
+--this is old database
+--dont need anymore
+--new one is autobody booking
+
+
+
+
 -- database_setup.sql 
 
 -- 1. Create the database and use it
