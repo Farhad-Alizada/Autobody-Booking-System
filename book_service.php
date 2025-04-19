@@ -90,10 +90,10 @@ if (!empty($_POST['service_id']) && !empty($_POST['service_date']) && !empty($_P
     $exteriorServices = ['Vinyl Wrap', 'Window Tint', 'PPF'];
 
     // Default to Sarah (exterior specialist) if service not found
-    $employeeID = 2; // Default to Sarah (ID 4 in our new structure)
+    $employeeID = 3;
 
     if ($service && in_array($service['OfferingName'], $performanceServices)) {
-        $employeeID = 3; // Alex (Performance Technician)
+        $employeeID = 2; // Alex (Performance Technician)
     }
 
     // Assign employee in ScheduleEmployee table
