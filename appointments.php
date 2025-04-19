@@ -2,9 +2,9 @@
 session_start();
 require_once 'db_connect.php';
 
-// Ensure the user is logged in and is a Customer
+// 1) Must be a logged‑in Customer
 if (!isset($_SESSION['user']) || $_SESSION['user']['AccessLevel'] !== 'Customer') {
-    http_response_code(401); // Unauthorized
+    http_response_code(401);
     echo "Unauthorized access";
     exit();
 }
@@ -12,51 +12,63 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['AccessLevel'] !== 'Customer'
 $customerID = $_SESSION['user']['UserID'];
 
 try {
-    // Fetch appointments with service name and status
-    $stmt = $pdo->prepare("
-        SELECT 
+    // 2) Load this customer’s appointments
+    $stmt = $pdo->prepare("\n        SELECT 
+            S.ScheduleID,
             SO.OfferingName,
             S.StartDate,
-            S.EndDate,
             S.Status
         FROM Schedule S
-        JOIN ServiceOffering SO ON S.OfferingID = SO.OfferingID
+        JOIN ServiceOffering SO 
+          ON S.OfferingID = SO.OfferingID
         WHERE S.CustomerUserID = :custID
         ORDER BY S.StartDate DESC
     ");
     $stmt->bindValue(':custID', $customerID, PDO::PARAM_INT);
     $stmt->execute();
-
     $appointments = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Output as HTML cards
+    // 3) If none, show a placeholder
+    if (empty($appointments)) {
+        echo "<p class='text-muted'>You have no appointments yet.</p>";
+        exit();
+    }
+
+    // 4) Otherwise, render each as a Bootstrap card
     foreach ($appointments as $appt) {
-        $date = date('Y-m-d', strtotime($appt['StartDate']));
-        $status = $appt['Status'];
-        $badgeClass = match ($status) {
-            'Scheduled' => 'bg-info',
-            'In Progress' => 'bg-warning',
-            'Completed' => 'bg-success',
-            default => 'bg-secondary',
-        };
+        $scheduleID   = (int) $appt['ScheduleID'];
+        $serviceName  = htmlspecialchars($appt['OfferingName']);
+        $date         = date('Y-m-d', strtotime($appt['StartDate']));
+        $status       = htmlspecialchars($appt['Status']);
+
+        // map status → badge color
+        switch ($status) {
+            case 'Scheduled':   $badgeClass = 'bg-info';    break;
+            case 'In Progress': $badgeClass = 'bg-warning'; break;
+            case 'Completed':   $badgeClass = 'bg-success'; break;
+            default:            $badgeClass = 'bg-secondary';
+        }
 
         echo "
         <div class='col-md-4 mb-4'>
-            <div class='card p-3'>
-                <h5>Service: {$appt['OfferingName']}</h5>
-                <p>Date: {$date}</p>
-                <p>Status: <span class='badge {$badgeClass}'>{$status}</span></p>
-                <button class='btn btn-secondary btn-sm'>View Details</button>
-            </div>
+          <div class='card p-3'>
+            <h5 class='card-title'>Service: {$serviceName}</h5>
+            <p class='card-text'>Date: {$date}</p>
+            <p class='card-text'>
+              Status: <span class='badge {$badgeClass}'>{$status}</span>
+            </p>
+            <a 
+              href='appointment_details.php?id={$scheduleID}' 
+              class='btn btn-secondary btn-sm'
+            >
+              View Details
+            </a>
+          </div>
         </div>
         ";
     }
 
-    if (empty($appointments)) {
-        echo "<p class='text-muted'>You have no appointments yet.</p>";
-    }
-
 } catch (PDOException $e) {
-    echo "Error retrieving appointments: " . $e->getMessage();
+    echo "<p class='text-danger'>Error retrieving appointments: "
+         . htmlspecialchars($e->getMessage()) . "</p>";
 }
-?>

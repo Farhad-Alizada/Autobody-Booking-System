@@ -1,3 +1,17 @@
+<?php
+  require_once 'db_connect.php';
+
+  // grab the 5 most recent feedback entries
+  $stmt = $pdo->query("
+    SELECT f.Comments, f.Rating, f.FeedbackDate, f.FeedbackName,
+           u.FirstName, u.LastName
+      FROM feedback f
+ LEFT JOIN users u ON f.CustomerUserID = u.UserID
+  ORDER BY f.FeedbackDate DESC
+  LIMIT 5
+  ");
+  $feedbackRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+  ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -111,75 +125,42 @@
     </div>
   </section>
 
-  <!-- FEEDBACK -->
-  <section id="feedback" class="container py-5">
-
-    <h2 class="text-center mb-4">Customer Feedback</h2>
-    <div class="row justify-content-center mb-5">
-      <div class="col-md-6">
-        <div class="card mb-4">
-          <div class="card-body">
-            <h5 class="card-title">John Doe</h5>
-            <p class="card-text">"I had my car wrapped by WrapLab and the results were amazing! The team was professional, fast, and the quality of work exceeded my expectations."</p>
-          </div>
+  <!-- TESTIMONIALS -->
+<section id="feedback" class="py-5 bg-light">
+  <div class="container">
+    <h2 class="text-center mb-4">What Our Customers Are Saying</h2>
+    <div class="row">
+      <?php if (empty($feedbackRows)): ?>
+        <div class="col-12 text-center">
+          No feedback yet—be the first to review us!
         </div>
-      </div>
-      <div class="col-md-6">
-        <div class="card mb-4">
-          <div class="card-body">
-            <h5 class="card-title">Jane Smith</h5>
-            <p class="card-text">"Great service, excellent tint job! My car looks brand new and the team was super helpful with all my questions. Highly recommend!"</p>
+      <?php else: ?>
+        <?php foreach ($feedbackRows as $fb): ?>
+          <div class="col-md-4 mb-4">
+            <div class="card h-100">
+              <div class="card-body">
+                <p class="card-text">
+                  “<?= htmlspecialchars($fb['Comments']) ?>”
+                </p>
+              </div>
+              <div class="card-footer">
+                <small class="text-muted">
+                  — <?= htmlspecialchars($fb['FeedbackName'] ?: $fb['FirstName']) ?>,
+                    <?= date('M j, Y', strtotime($fb['FeedbackDate'])) ?>
+                </small>
+                <div>
+                  <?php for ($i = 0; $i < $fb['Rating']; $i++): ?>
+                    ⭐
+                  <?php endfor; ?>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        <?php endforeach; ?>
+      <?php endif; ?>
     </div>
-
-    <!-- Feedback Form -->
-    <h4 class="text-center mb-3">Leave Your Feedback</h4>
-    <form class="mx-auto" style="max-width: 600px;" action="#" method="POST">
-      <!-- Rating input -->
-      <div class="mb-4">
-        <label class="form-label fw-semibold">Your Rating</label>
-        <div>
-          <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="rating" id="rating5" value="5" required>
-            <label class="form-check-label" for="rating5">5/5</label>
-          </div>
-          <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="rating" id="rating4" value="4">
-            <label class="form-check-label" for="rating4">4/5</label>
-          </div>
-          <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="rating" id="rating3" value="3">
-            <label class="form-check-label" for="rating3">3/5</label>
-          </div>
-          <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="rating" id="rating2" value="2">
-            <label class="form-check-label" for="rating2">2/5</label>
-          </div>
-          <div class="form-check form-check-inline">
-            <input class="form-check-input" type="radio" name="rating" id="rating1" value="1">
-            <label class="form-check-label" for="rating1">1/5</label>
-          </div>
-        </div>
-      </div>
-
-      <!-- Name input -->
-      <div class="mb-3">
-        <label for="name" class="form-label">Your Name</label>
-        <input type="text" class="form-control" id="name" placeholder="Enter your name" required>
-      </div>
-
-      <!-- Feedback text -->
-      <div class="mb-4">
-        <label for="feedbackText" class="form-label">Your Feedback</label>
-        <textarea class="form-control" id="feedbackText" rows="3" placeholder="Write your feedback here..." required></textarea>
-      </div>
-
-      <!-- Submit -->
-      <button type="submit" class="btn btn-primary w-100">Submit Feedback</button>
-    </form>
-  </section>
+  </div>
+</section>
 
   <!-- ABOUT US -->
   <section id="about" class="py-5 bg-black">
