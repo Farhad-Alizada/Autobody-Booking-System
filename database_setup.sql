@@ -71,6 +71,17 @@ CREATE TABLE IF NOT EXISTS DiscountCoupon (
                                               FOREIGN KEY (AdminUserID) REFERENCES Admin(UserID)
 );
 
+CREATE TABLE IF NOT EXISTS Vehicle (
+                                       VehicleID        INT AUTO_INCREMENT PRIMARY KEY,
+                                       CustomerUserID   INT,
+                                       Make             VARCHAR(50),
+                                       Model            VARCHAR(50),
+                                       Year             INT,
+                                       VINNumber        VARCHAR(50),
+                                       Color            VARCHAR(30),
+                                       FOREIGN KEY (CustomerUserID) REFERENCES Customer(UserID)
+);
+
 -- 9. Schedule (Bookings)
 CREATE TABLE IF NOT EXISTS Schedule (
                                         CustomerUserID   INT,
@@ -87,18 +98,6 @@ CREATE TABLE IF NOT EXISTS Schedule (
                                         FOREIGN KEY (AdminUserID)      REFERENCES Admin(UserID),
                                         FOREIGN KEY (VehicleID)        REFERENCES Vehicle(VehicleID)
 );
-
-CREATE TABLE IF NOT EXISTS Vehicle (
-                                       VehicleID        INT AUTO_INCREMENT PRIMARY KEY,
-                                       CustomerUserID   INT,
-                                       Make             VARCHAR(50),
-                                       Model            VARCHAR(50),
-                                       Year             INT,
-                                       VINNumber        VARCHAR(50),
-                                       Color            VARCHAR(30),
-                                       FOREIGN KEY (CustomerUserID) REFERENCES Customer(UserID)
-);
-
 
 -- 10. CustomerDiscountCoupon
 CREATE TABLE IF NOT EXISTS CustomerDiscountCoupon (
@@ -152,16 +151,21 @@ INSERT INTO Admin (UserID,WebsiteUpdateDate,AdminNotes)
 VALUES (1,'2025-03-18','Main Admin account');
 
 -- Employee
-INSERT INTO Users (Password,PhoneNumber,FirstName,LastName,Email,AccessLevel)
-VALUES ('employeepass','587-111-000','Richard','Tan','richardtan5789@company.com','Employee');
-INSERT INTO Employee (UserID,JobTitle,Specialization)
-VALUES (2,'Mechanic','Auto Repair');
+INSERT INTO Users (Password, PhoneNumber, FirstName, LastName, Email, AccessLevel)
+VALUES ('tech1pass', '587-111-2222', 'Alex', 'Johnson', 'alex.johnson@autobody.com', 'Employee');
+INSERT INTO Employee (UserID, JobTitle, Specialization)
+VALUES (2, 'Performance Technician', 'Performance Upgrades');
+
+INSERT INTO Users (Password, PhoneNumber, FirstName, LastName, Email, AccessLevel)
+VALUES ('tech2pass', '587-222-3333', 'Sarah', 'Williams', 'sarah.williams@autobody.com', 'Employee');
+INSERT INTO Employee (UserID, JobTitle, Specialization)
+VALUES (3, 'Exterior Technician', 'Exterior Enhancements');
 
 -- Customer
 INSERT INTO Users (Password,PhoneNumber,FirstName,LastName,Email,AccessLevel)
 VALUES ('customerpass','825-111-000','Charlie','Angus','charlie@example.com','Customer');
 INSERT INTO Customer (UserID,PreferredContact,Address)
-VALUES (3,'Email','123 Main Street');
+VALUES (4,'Email','123 Main Street');
 
 -- Services
 INSERT INTO ServiceOffering (OfferingName,ServiceDescription,ServicePrice,ImagePath)
@@ -172,26 +176,26 @@ VALUES
     ('PPF','Paint Protection Film application',450.00,NULL);
 
 -- DealsWith
-INSERT INTO DealsWith (CustomerUserID,EmployeeUserID) VALUES (3,2);
+INSERT INTO DealsWith (CustomerUserID,EmployeeUserID) VALUES (4,2);
 
 -- Schedule
 INSERT INTO Schedule (CustomerUserID,OfferingID,StartDate,EndDate,AdminUserID,Status)
-VALUES (3,1,'2025-03-25 10:00:00','2025-03-25 11:00:00',1,'Scheduled');
+VALUES (4,1,'2025-03-25 10:00:00','2025-03-25 11:00:00',1,'Scheduled');
 
 -- ScheduleEmployee
 INSERT INTO ScheduleEmployee
 (CustomerUserID,OfferingID,StartDate,EndDate,EmployeeUserID)
-VALUES (3,1,'2025-03-25 10:00:00','2025-03-25 11:00:00',2);
+VALUES (4,1,'2025-03-25 10:00:00','2025-03-25 11:00:00',2);
 
 -- Feedback
 INSERT INTO Feedback
 (CustomerUserID,FeedbackDate,FeedbackName,Comments,Rating)
-VALUES (3,'2025-03-26 15:30:00','Charlie','Great service!',5);
+VALUES (4,'2025-03-26 15:30:00','Charlie','Great service!',5);
 
 -- DiscountCoupon + assignment
 INSERT INTO DiscountCoupon (DiscountAmount,OfferingID,AdminUserID)
 VALUES (5.00,1,1);
-INSERT INTO CustomerDiscountCoupon (CouponNumber,CustomerUserID) VALUES (1,3);
+INSERT INTO CustomerDiscountCoupon (CouponNumber,CustomerUserID) VALUES (1,4);
 
 -- Sample SELECT Queries (Examples)
 
@@ -213,7 +217,7 @@ FROM Feedback F
 
 UPDATE Users
 SET PhoneNumber = '647-555-1985'
-WHERE UserID = 3;
+WHERE UserID = 4;
 
 UPDATE ServiceOffering
 SET ServicePrice = 22.00
@@ -225,7 +229,7 @@ DELETE FROM Feedback
 WHERE FeedbackID = 1;
 
 DELETE FROM CustomerDiscountCoupon
-WHERE CouponNumber = 1 AND CustomerUserID = 3;
+WHERE CouponNumber = 1 AND CustomerUserID = 4;
 
 -- Aggregation
 

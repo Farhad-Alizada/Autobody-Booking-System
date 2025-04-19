@@ -21,6 +21,7 @@ try {
             S.StartDate,
             S.EndDate,
             S.Status,
+            S.ScheduleID,
             V.Make,
             V.Model,
             V.Year,
@@ -61,7 +62,7 @@ try {
         };
 
         // Generate a unique ID for each modal
-        $modalId = 'apptDetails-' . md5($appt['StartDate'] . $appt['OfferingName']);
+        $modalId = 'apptDetails-' . $appt['ScheduleID'];
 
         // Employee information display
         $employeeInfo = 'Not assigned yet';
@@ -82,9 +83,9 @@ try {
                     <button class='btn btn-secondary btn-sm' data-bs-toggle='modal' data-bs-target='#{$modalId}'>
                         View Details
                     </button>
-                    <button class='btn btn-primary btn-sm manage-appointment-btn' data-appt-id='".md5($appt['StartDate'] . $appt['OfferingName'])."'>
+                    <a href='manage_appointment.php?schedule_id={$appt['ScheduleID']}' class='btn btn-primary btn-sm'>
                         Manage Appointment
-                    </button>
+                    </a>
                 </div>
             </div>
         </div>

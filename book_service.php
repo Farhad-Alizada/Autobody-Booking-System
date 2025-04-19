@@ -81,6 +81,21 @@ if (!empty($_POST['service_id']) && !empty($_POST['service_date']) && !empty($_P
         'endDate' => $endDate
     ];
 
+    // Determine which employee to assign based on service type
+    $stmt_service = $pdo->prepare("SELECT OfferingName FROM ServiceOffering WHERE OfferingID = ?");
+    $service = $stmt_service->fetch(PDO::FETCH_ASSOC);
+
+    // Define which services go to which employee
+    $performanceServices = ['Performance Tuning'];
+    $exteriorServices = ['Vinyl Wrap', 'Window Tint', 'PPF'];
+
+    // Default to Sarah (exterior specialist) if service not found
+    $employeeID = 2; // Default to Sarah (ID 4 in our new structure)
+
+    if ($service && in_array($service['OfferingName'], $performanceServices)) {
+        $employeeID = 3; // Alex (Performance Technician)
+    }
+
     // Assign employee in ScheduleEmployee table
     $stmt_employee = $pdo->prepare("INSERT INTO ScheduleEmployee 
         (CustomerUserID, OfferingID, StartDate, EndDate, EmployeeUserID) 
