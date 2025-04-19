@@ -1,7 +1,8 @@
 -- database_setup.sql 
 
 -- 1. Create the database and use it
-CREATE DATABASE IF NOT EXISTS AutoBodyBooking;
+DROP DATABASE IF EXISTS AutoBodyBooking;
+CREATE DATABASE AutoBodyBooking;
 USE AutoBodyBooking;
 
 -- 2. Users
@@ -49,7 +50,7 @@ CREATE TABLE ServiceOffering (
   OfferingName       VARCHAR(100),
   ServiceDescription TEXT,
   ServicePrice       DECIMAL(10,2),
-  ImagePath          VARCHAR(255),          -- NULL allowed
+  ImagePath          VARCHAR(255)         -- NULL allowed
 );
 
 -- 7. Feedback
@@ -153,27 +154,27 @@ VALUES (3,'Email','123 Main Street');
 -- Services (ImagePath defaults to NULL)
 INSERT INTO ServiceOffering (OfferingName,ServiceDescription,ServicePrice)
 VALUES
-  ('Vinyl Wrap','Full vehicle vinyl wrapping service',500.00,500.00),
-  ('Window Tint','Professional window tinting',200.00,200.00),
-  ('Performance Tuning','Enhance vehicle performance with ECU tuning',350.00,350.00),
-  ('PPF','Paint Protection Film application',450.00,450.00);
+  ('Vinyl Wrap','Full vehicle vinyl wrapping service',500.00),
+  ('Window Tint','Professional window tinting',200.00),
+  ('Performance Tuning','Enhance vehicle performance with ECU tuning',350.00),
+  ('PPF','Paint Protection Film application',450.00);
 
 -- DealsWith
 INSERT INTO DealsWith (CustomerUserID,EmployeeUserID) VALUES (3,2);
 
 -- Schedule
 INSERT INTO Schedule (CustomerUserID,OfferingID,StartDate,EndDate,AdminUserID,Status)
-VALUES (3,1,'2025-03-25 10:00:00','2025-03-25 11:00:00',20.00,1,'Scheduled');
+VALUES (3,1,'2025-03-25 10:00:00','2025-03-25 11:00:00',1,'Scheduled');
 
 -- ScheduleEmployee
 INSERT INTO ScheduleEmployee
   (CustomerUserID,OfferingID,StartDate,EndDate,EmployeeUserID)
-VALUES (3,1,'2025-03-25 10:00:00','2025-03-25 11:00:00',2);
+VALUES (3,1,'2025-03-25 10:00:00','2025-03-25 11:00:00',2);
 
 -- Feedback
 INSERT INTO Feedback
   (CustomerUserID,FeedbackDate,FeedbackName,Comments,Rating)
-VALUES (3,'2025-03-26 15:30:00','Charlie','Great service!',5);
+VALUES (3,'2025-03-26 15:30:00','Charlie','Great service!',5);
 
 -- DiscountCoupon + assignment
 INSERT INTO DiscountCoupon (DiscountAmount,OfferingID,AdminUserID)
@@ -209,7 +210,7 @@ SET PhoneNumber = '647-555-1985'
 WHERE UserID = 3;
 
 UPDATE ServiceOffering
-SET ServicePrice = 22.00, 
+SET ServicePrice = 22.00
 WHERE OfferingID = 1;
 
 -- Sample DELETE Queries (Examples)
@@ -241,7 +242,7 @@ WHERE U.UserID IN (
 
 -- Join in SELECT Example: List all feedback with customer's full name and booking total price
 
-SELECT U.FirstName, U.LastName, F.Comments, F.Rating, 
+SELECT U.FirstName, U.LastName, F.Comments, F.Rating
 FROM Feedback F
 JOIN Customer C ON F.CustomerUserID = C.UserID
 JOIN Users U ON C.UserID = U.UserID
@@ -252,7 +253,7 @@ GROUP BY F.FeedbackID;
 
 UPDATE ServiceOffering SO
 JOIN DiscountCoupon DC ON SO.OfferingID = DC.OfferingID
-SET SO.ServicePrice = SO.ServicePrice - DC.DiscountAmount,
+SET SO.ServicePrice = SO.ServicePrice - DC.DiscountAmount
 WHERE DC.CouponNumber = 1;
 
 
@@ -272,7 +273,7 @@ WHERE CustomerUserID IN (
 
 
 CREATE VIEW CustomerBookings AS
-SELECT U.UserID, U.FirstName, U.LastName, S.OfferingID, S.StartDate, S.EndDate, 
+SELECT U.UserID, U.FirstName, U.LastName, S.OfferingID, S.StartDate, S.EndDate
 FROM Users U
 JOIN Customer C ON U.UserID = C.UserID
 JOIN Schedule S ON C.UserID = S.CustomerUserID;
