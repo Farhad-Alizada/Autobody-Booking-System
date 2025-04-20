@@ -1,55 +1,79 @@
 <?php
 session_start();
 require_once 'db_connect.php';
-if (!isset($_SESSION['user']) || $_SESSION['user']['AccessLevel']!=='Admin') {
-  header('Location: login.html');
-  exit();
+
+// only admins can do this
+if (!isset($_SESSION['user']) || $_SESSION['user']['AccessLevel'] !== 'Admin') {
+    header('Location: login.html');
+    exit();
 }
 
-// grab & sanitize
-$fn  = trim($_POST['first_name']);
-$ln  = trim($_POST['last_name']);
-$addr= trim($_POST['address']);
-$job = trim($_POST['job_title']);
-$spec= trim($_POST['specialization']);
-if (!$fn||!$ln||!$addr||!$job||!$spec) {
-  die("All fields are required.");
+// 1) grab & sanitize
+$fnRaw  = trim($_POST['first_name']  ?? '');
+$lnRaw  = trim($_POST['last_name']   ?? '');
+$addr   = trim($_POST['address']     ?? '');
+$job    = trim($_POST['job_title']   ?? '');
+$spec   = trim($_POST['specialization'] ?? '');
+
+if (!$fnRaw || !$lnRaw || !$addr || !$job || !$spec) {
+    die("All fields are required.");
 }
 
-// 1) generate base email
-$base = strtolower(preg_replace('/[^a-z]/','', $fn))
-      .'.'
-      .strtolower(preg_replace('/[^a-z]/','', $ln))
-      .'@wraplab.com';
+// 2) normalize to Title Case
+$fn = mb_convert_case($fnRaw, MB_CASE_TITLE, "UTF-8");
+$ln = mb_convert_case($lnRaw, MB_CASE_TITLE, "UTF-8");
 
-// 2) dedupe
-$stmt = $pdo->prepare("SELECT COUNT(*) FROM Users WHERE Email LIKE ?");
-$stmt->execute([ str_replace('@wraplab.com','',$base) .'%@wraplab.com' ]);
-$count = (int)$stmt->fetchColumn();
-$email = $count
-  ? str_replace('@wraplab.com','',$base).$count.'@wraplab.com'
-  : $base;
+// 3) slugify (keep only a–z letters, then lowercase)
+$fnSlug = strtolower(preg_replace('/[^a-z]/i', '', $fn));
+$lnSlug = strtolower(preg_replace('/[^a-z]/i', '', $ln));
 
-// 3) default password
+// local‑part & base email
+$local    = $fnSlug . '.' . $lnSlug;
+$baseEmail = $local . '@wraplab.com';
+
+// 4) find existing emails like “local%” and extract highest suffix
+$stmt = $pdo->prepare("SELECT Email FROM Users WHERE Email LIKE ?");
+$stmt->execute([ $local . '%@wraplab.com' ]);
+$all = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+if (!in_array($baseEmail, $all, true)) {
+    // free to use
+    $email = $baseEmail;
+} else {
+    // scan for suffixes
+    $max = 0;
+    foreach ($all as $e) {
+        if (preg_match(
+            '/^' . preg_quote($local, '/') . '(\d+)@wraplab\.com$/',
+            $e,
+            $m
+        )) {
+            $max = max($max, (int)$m[1]);
+        }
+    }
+    $email = $local . ($max + 1) . '@wraplab.com';
+}
+
+// 5) default password
 $pwd = 'changeme123';
 
-// 4) insert into Users
+// 6) insert into Users
 $insU = $pdo->prepare("
-  INSERT INTO Users
-    (FirstName, LastName, Email, Password, AccessLevel)
-  VALUES (?,?,?,?, 'Employee')
+    INSERT INTO Users
+      (FirstName, LastName, Email, Password, AccessLevel)
+    VALUES (?, ?, ?, ?, 'Employee')
 ");
-$insU->execute([$fn,$ln,$email,$pwd]);
+$insU->execute([$fn, $ln, $email, password_hash($pwd, PASSWORD_DEFAULT)]);
 $uid = $pdo->lastInsertId();
 
-// 5) insert into Employee (assumes Address column exists)
+// 7) insert into Employee
 $insE = $pdo->prepare("
-  INSERT INTO Employee
-    (UserID, JobTitle, Specialization, Address)
-  VALUES (?,?,?,?)
+    INSERT INTO Employee
+      (UserID, JobTitle, Specialization, Address)
+    VALUES (?, ?, ?, ?)
 ");
-$insE->execute([$uid,$job,$spec,$addr]);
+$insE->execute([$uid, $job, $spec, $addr]);
 
-// redirect back
+// all done
 header('Location: admin.php?msg=employee_added');
 exit();
