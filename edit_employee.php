@@ -24,9 +24,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // phone → exactly 10 digits
-    if (!preg_match('/^\d{10}$/', $phoneRaw)) {
-        die("Phone number must be exactly 10 digits.");
-    }
+    if (!$phoneRaw) {
+      die("All fields are required, including phone number.");
+  }
+  
+  // strip any non-digits
+  $digits = preg_replace('/\D+/', '', $phoneRaw);
+  
+  if (strlen($digits) !== 10) {
+      die("Phone number must contain exactly 10 digits (e.g. 825-111-2222 or 8251112222).");
+  }
+  
+  // and later, when you update:
+  $updU = $pdo->prepare("
+    UPDATE Users
+       SET FirstName  = ?,
+           LastName   = ?,
+           Email      = ?,
+           PhoneNumber= ?
+     WHERE UserID    = ?
+  ");
+  $updU->execute([
+      $first,
+      $last,
+      $email,
+      $digits,  // store the clean 10-digit string
+      $id
+  ]);
 
     // regenerate email
     $base = strtolower($first) .'.'. strtolower($last);
@@ -112,7 +136,7 @@ if (!$e) {
     </div>
     <div class="col-12">
       <label class="form-label">Phone Number</label>
-      <input name="phone_number" type="text" class="form-control" maxlength="10" required
+      <input name="phone_number" type="text" class="form-control" maxlength="12" required
              value="<?=htmlspecialchars($e['PhoneNumber'])?>">
     </div>
     <div class="col-12">

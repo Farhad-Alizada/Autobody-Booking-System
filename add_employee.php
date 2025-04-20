@@ -21,9 +21,33 @@ if (!$fnRaw || !$lnRaw || !$addr || !$job || !$spec || !$phoneRaw) {
 }
 
 // 1a) phone must be exactly 10 digits
-if (!preg_match('/^\d{10}$/', $phoneRaw)) {
-    die("Phone number must be exactly 10 digits.");
+if (!$phoneRaw) {
+  die("All fields are required, including phone number.");
 }
+
+// strip any non-digits
+$digits = preg_replace('/\D+/', '', $phoneRaw);
+
+if (strlen($digits) !== 10) {
+  die("Phone number must contain exactly 10 digits (e.g. 825-111-2222 or 8251112222).");
+}
+
+// and later, when you update:
+$updU = $pdo->prepare("
+UPDATE Users
+   SET FirstName  = ?,
+       LastName   = ?,
+       Email      = ?,
+       PhoneNumber= ?
+ WHERE UserID    = ?
+");
+$updU->execute([
+  $first,
+  $last,
+  $email,
+  $digits,  // store the clean 10-digit string
+  $id
+]);
 
 // 2) normalize to Title Case
 $fn = mb_convert_case($fnRaw, MB_CASE_TITLE, "UTF-8");

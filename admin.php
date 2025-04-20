@@ -492,7 +492,7 @@ $employees = $pdo
                 name="phone_number" 
                 type="text" 
                 class="form-control" 
-                maxlength="10" 
+                maxlength="12" 
                 required
               >
             </div>
