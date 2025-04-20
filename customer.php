@@ -2,49 +2,74 @@
 session_start();
 require_once 'db_connect.php';
 
-// Redirect if not logged in as Customer
+// only customers
 if (!isset($_SESSION['user']) || $_SESSION['user']['AccessLevel'] !== 'Customer') {
     header('Location: login.html');
     exit();
 }
+$customerID = $_SESSION['user']['UserID'];
 
-// 1) Fetch service offerings
-$stmt       = $pdo->query("SELECT OfferingID, OfferingName FROM ServiceOffering");
-$offerings  = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// ——— Handle profile update ———
+if ($_SERVER['REQUEST_METHOD']==='POST' && isset($_POST['update_profile'])) {
+    $pref = $_POST['preferred_contact'];
+    $addr = trim($_POST['address']);
+    $stmt = $pdo->prepare("
+      UPDATE Customer
+         SET PreferredContact = :pref
+           , Address          = :addr
+       WHERE UserID = :uid
+    ");
+    $stmt->execute([':pref'=>$pref,':addr'=>$addr,':uid'=>$customerID]);
+    header('Location: customer.php?msg=profile_updated');
+    exit();
+}
 
-// 2) Fetch all employees
-$empRows = $pdo->query(
-  "SELECT U.UserID
-        ,U.FirstName
-        ,U.LastName
-        ,E.Specialization
-     FROM Users U
-     JOIN Employee E ON U.UserID = E.UserID
-    WHERE U.AccessLevel = 'Employee'"
-)->fetchAll(PDO::FETCH_ASSOC);
+// ——— Fetch profile info ———
+$stmt = $pdo->prepare("
+  SELECT 
+    U.FirstName, U.LastName, U.Email, U.PhoneNumber,
+    C.PreferredContact, C.Address
+  FROM Users U
+  JOIN Customer C ON U.UserID=C.UserID
+  WHERE U.UserID = ?
+");
+$stmt->execute([$customerID]);
+$profile = $stmt->fetch(PDO::FETCH_ASSOC)
+         ?: ['FirstName'=>'','LastName'=>'','Email'=>'','PhoneNumber'=>'','PreferredContact'=>'','Address'=>''];
 
-// 3) Fetch all future availability slots
-$slotsStmt  = $pdo->prepare(
-    "SELECT EmployeeUserID, AvailabilityDate, StartTime, EndTime
-      FROM EmployeeAvailability
-     WHERE AvailabilityDate >= CURDATE()
-     ORDER BY AvailabilityDate, StartTime"
-);
-$slotsStmt->execute();
-$allSlots   = $slotsStmt->fetchAll(PDO::FETCH_ASSOC);
+// ——— Fetch service offerings ———
+$offerings = $pdo->query("SELECT OfferingID, OfferingName FROM ServiceOffering")
+                 ->fetchAll(PDO::FETCH_ASSOC);
+
+// ——— Fetch all employees & slots for booking below ———
+$empRows = $pdo->query("
+  SELECT U.UserID,U.FirstName,U.LastName,E.Specialization
+    FROM Users U
+    JOIN Employee E ON U.UserID=E.UserID
+   WHERE U.AccessLevel='Employee'
+")->fetchAll(PDO::FETCH_ASSOC);
+
+$allSlots = $pdo->prepare("
+  SELECT EmployeeUserID, AvailabilityDate, StartTime, EndTime
+    FROM EmployeeAvailability
+   WHERE AvailabilityDate >= CURDATE()
+   ORDER BY AvailabilityDate, StartTime
+");
+$allSlots->execute();
+$allSlots = $allSlots->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>WrapLab Customer Dashboard</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body class="d-flex">
+
   <!-- SIDEBAR -->
   <nav id="sidebar" class="bg-black text-white p-3">
     <h3 class="text-purple mb-4">Customer Dashboard</h3>
@@ -56,6 +81,68 @@ $allSlots   = $slotsStmt->fetchAll(PDO::FETCH_ASSOC);
     </ul>
   </nav>
 
+  <!-- MAIN CONTENT -->
+  <div class="flex-grow-1">
+    <div class="container-fluid p-4">
+      <div class="row">
+
+        <!-- PROFILE & CHANGE PASSWORD (30%) -->
+        <div class="col-lg-3 mb-5">
+          <section id="my-profile">
+            <h3 class="mb-3">My Profile</h3>
+            <div class="card mb-4">
+              <div class="card-body">
+                <p><strong>Name:</strong> <?=htmlspecialchars($profile['FirstName'].' '.$profile['LastName'])?></p>
+                <p><strong>Email:</strong> <?=htmlspecialchars($profile['Email'])?></p>
+                <p><strong>Phone:</strong> <?=htmlspecialchars($profile['PhoneNumber'])?></p>
+                <p><strong>Preferred Contact:</strong> <?=htmlspecialchars($profile['PreferredContact'])?></p>
+                <p><strong>Address:</strong> <?=htmlspecialchars($profile['Address'])?></p>
+              </div>
+            </div>
+
+            <!-- update preferred contact & address -->
+            <h4 class="mb-3">Edit Contact Info</h4>
+            <form action="customer.php" method="POST" class="mb-4">
+              <input type="hidden" name="update_profile" value="1">
+              <div class="mb-2">
+                <label class="form-label">Preferred Contact</label>
+                <select name="preferred_contact" class="form-select" required>
+                  <option <?= $profile['PreferredContact']==='Email' ? 'selected':''?>>Email</option>
+                  <option <?= $profile['PreferredContact']==='Phone' ? 'selected':''?>>Phone</option>
+                </select>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Address</label>
+                <input
+                  type="text"
+                  name="address"
+                  class="form-control"
+                  value="<?=htmlspecialchars($profile['Address'])?>"
+                  required>
+              </div>
+              <button class="btn btn-primary btn-sm">Save</button>
+            </form>
+
+            <!-- change password -->
+            <h4 class="mb-3">Change Password</h4>
+            <form id="password-form" action="update_password_customer.php" method="POST" class="row g-3">
+              <div class="col-12">
+                <label for="new_pwd" class="form-label">New Password</label>
+                <input type="password" id="new_pwd" name="new_password" class="form-control" minlength="6" required>
+              </div>
+              <div class="col-12">
+                <label for="confirm_pwd" class="form-label">Confirm Password</label>
+                <input type="password" id="confirm_pwd" name="confirm_password" class="form-control" minlength="6" required>
+              </div>
+              <div class="col-12">
+                <button type="submit" class="btn btn-primary btn-sm">Change Password</button>
+              </div>
+            </form>
+          </section>
+        </div>
+
+        <!-- REST OF DASHBOARD (70%) -->
+        <div class="col-lg-9">
   <!-- MAIN CONTENT -->
   <div class="flex-grow-1">
     <div class="container-fluid p-4">
@@ -252,6 +339,26 @@ $allSlots   = $slotsStmt->fetchAll(PDO::FETCH_ASSOC);
           employeeSelect.append(opt.cloneNode(true));
         }
       });
+    });
+
+    <!-- JS for password form -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+  // ── Password mismatch & length check ────────────────────────────────────────
+    document.getElementById('password-form')?.addEventListener('submit', function(e) {
+      const n = document.getElementById('new_pwd').value.trim();
+      const c = document.getElementById('confirm_pwd').value.trim();
+      if (!n || !c) {
+        e.preventDefault();
+        alert("❗ Both password fields are required.");
+      } else if (n.length < 6) {
+        e.preventDefault();
+        alert("❗ Password must be at least 6 characters long.");
+      } else if (n !== c) {
+        e.preventDefault();
+        alert("❗ Passwords do not match.");
+        document.getElementById('confirm_pwd').focus();
+      }
     });
   </script>
 </body>
