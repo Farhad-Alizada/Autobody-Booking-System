@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Apr 19, 2025 at 10:21 PM
+-- Generation Time: Apr 20, 2025 at 05:26 AM
 -- Server version: 10.4.28-MariaDB
 -- PHP Version: 8.2.4
 
@@ -59,7 +59,8 @@ CREATE TABLE `customer` (
 INSERT INTO `customer` (`UserID`, `PreferredContact`, `Address`) VALUES
 (3, 'Email', '123 Main Street'),
 (10, 'Email', '12345 st nw'),
-(11, 'Phone', '123');
+(11, 'Phone', '123'),
+(15, 'Email', '123');
 
 -- --------------------------------------------------------
 
@@ -143,7 +144,9 @@ CREATE TABLE `employee` (
 INSERT INTO `employee` (`UserID`, `JobTitle`, `Specialization`, `Address`) VALUES
 (2, 'Tinter', 'Window Tints', '254 Some Street NW Calgary, AB, Canada'),
 (12, 'Performance', 'engine retune', '123 somewhere drive, Alaska, USA'),
-(13, 'PPF instal', 'PPF', '123 which Street Alabama');
+(13, 'PPF instal', 'PPF', '123 which Street Alabama'),
+(14, 'vinyl wrap', 'vinyl wrap', 'aStreet kenya Africa'),
+(16, 'tint', 'Window Tint', 'Zimbabwe drive, Africa');
 
 -- --------------------------------------------------------
 
@@ -165,16 +168,20 @@ CREATE TABLE `employeeavailability` (
 --
 
 INSERT INTO `employeeavailability` (`AvailabilityID`, `EmployeeUserID`, `AvailabilityDate`, `Status`, `StartTime`, `EndTime`) VALUES
-(20, 2, '2025-04-19', 'Available', '08:00:00', '09:00:00'),
 (21, 2, '2025-04-19', 'Available', '09:00:00', '10:00:00'),
 (22, 2, '2025-04-19', 'Available', '10:00:00', '11:00:00'),
 (23, 2, '2025-04-19', 'Available', '11:00:00', '12:00:00'),
-(25, 2, '2025-04-21', 'Available', '09:00:00', '10:00:00'),
-(26, 2, '2025-04-21', 'Available', '10:00:00', '11:00:00'),
-(27, 12, '2025-04-19', 'Available', '08:00:00', '09:00:00'),
-(28, 12, '2025-04-19', 'Available', '09:00:00', '10:00:00'),
 (30, 12, '2025-04-20', 'Available', '16:00:00', '17:00:00'),
-(31, 12, '2025-04-20', 'Available', '17:00:00', '18:00:00');
+(31, 12, '2025-04-20', 'Available', '17:00:00', '18:00:00'),
+(35, 12, '2025-05-02', 'Available', '08:00:00', '09:00:00'),
+(36, 12, '2025-05-02', 'Available', '09:00:00', '10:00:00'),
+(37, 12, '2025-05-02', 'Available', '10:00:00', '11:00:00'),
+(44, 12, '2025-04-25', 'Available', '16:00:00', '17:00:00'),
+(45, 16, '2025-04-24', 'Available', '08:00:00', '09:00:00'),
+(46, 16, '2025-04-24', 'Available', '12:00:00', '13:00:00'),
+(47, 16, '2025-04-24', 'Available', '16:00:00', '17:00:00'),
+(49, 14, '2025-04-21', 'Available', '12:00:00', '13:00:00'),
+(50, 14, '2025-04-21', 'Available', '16:00:00', '17:00:00');
 
 -- --------------------------------------------------------
 
@@ -197,15 +204,16 @@ CREATE TABLE `feedback` (
 
 INSERT INTO `feedback` (`FeedbackID`, `CustomerUserID`, `FeedbackDate`, `FeedbackName`, `Comments`, `Rating`) VALUES
 (2, 3, '2025-04-17 02:52:33', NULL, '(Hello) heloo', 5),
-(3, 11, '2025-04-19 03:40:40', 'jony', 'very nice,', 5);
+(3, 11, '2025-04-19 03:40:40', 'jony', 'very nice,', 5),
+(4, 15, '2025-04-20 01:24:20', 'jb', 'I love u', 5);
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `schedule`
+-- Table structure for table `Schedule`
 --
 
-CREATE TABLE `schedule` (
+CREATE TABLE `Schedule` (
   `ScheduleID` int(11) NOT NULL,
   `CustomerUserID` int(11) NOT NULL,
   `OfferingID` int(11) NOT NULL,
@@ -213,21 +221,31 @@ CREATE TABLE `schedule` (
   `EndDate` datetime NOT NULL,
   `TotalPrice` decimal(10,2) DEFAULT NULL,
   `AdminUserID` int(11) DEFAULT NULL,
+  `VehicleID` int(11) DEFAULT NULL,
   `Status` enum('Scheduled','In Progress','Completed') DEFAULT 'Scheduled'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `schedule`
+-- Dumping data for table `Schedule`
 --
 
-INSERT INTO `schedule` (`ScheduleID`, `CustomerUserID`, `OfferingID`, `StartDate`, `EndDate`, `TotalPrice`, `AdminUserID`, `Status`) VALUES
-(1, 3, 1, '2025-03-25 10:00:00', '2025-03-25 11:00:00', 20.00, 1, 'Completed'),
-(2, 11, 1, '2025-04-19 16:03:00', '2025-04-19 17:03:00', 0.00, 1, 'Scheduled'),
-(3, 11, 1, '2025-04-22 12:00:00', '2025-04-22 13:00:00', 0.00, 1, 'Completed'),
-(7, 11, 7, '2025-04-19 10:00:00', '2025-04-19 11:00:00', 699.00, 1, 'Completed'),
-(6, 11, 7, '2025-04-21 08:00:00', '2025-04-21 09:00:00', 699.00, 1, 'Completed'),
-(5, 11, 7, '2025-04-22 16:00:00', '2025-04-22 17:00:00', 0.00, 1, 'Completed'),
-(4, 11, 8, '2025-04-22 17:00:00', '2025-04-22 18:00:00', 0.00, 1, 'Completed');
+INSERT INTO `Schedule` (`ScheduleID`, `CustomerUserID`, `OfferingID`, `StartDate`, `EndDate`, `TotalPrice`, `AdminUserID`, `VehicleID`, `Status`) VALUES
+(1, 3, 1, '2025-03-25 10:00:00', '2025-03-25 11:00:00', 20.00, 1, NULL, 'Completed'),
+(2, 11, 1, '2025-04-19 16:03:00', '2025-04-19 17:03:00', 0.00, 1, NULL, 'Scheduled'),
+(3, 11, 1, '2025-04-22 12:00:00', '2025-04-22 13:00:00', 0.00, 1, NULL, 'Completed'),
+(8, 11, 6, '2025-04-19 08:00:00', '2025-04-19 09:00:00', 2399.00, 1, NULL, 'In Progress'),
+(7, 11, 7, '2025-04-19 10:00:00', '2025-04-19 11:00:00', 699.00, 1, NULL, 'Completed'),
+(6, 11, 7, '2025-04-21 08:00:00', '2025-04-21 09:00:00', 699.00, 1, NULL, 'Completed'),
+(5, 11, 7, '2025-04-22 16:00:00', '2025-04-22 17:00:00', 0.00, 1, NULL, 'Completed'),
+(4, 11, 8, '2025-04-22 17:00:00', '2025-04-22 18:00:00', 0.00, 1, NULL, 'Completed'),
+(12, 15, 6, '2025-04-20 08:00:00', '2025-04-20 09:00:00', 2399.00, 1, NULL, 'Completed'),
+(13, 15, 6, '2025-04-21 09:00:00', '2025-04-21 10:00:00', 2399.00, 1, NULL, 'Scheduled'),
+(14, 15, 6, '2025-04-21 10:00:00', '2025-04-21 11:00:00', 2399.00, 1, 1, 'Scheduled'),
+(15, 15, 6, '2025-04-25 12:00:00', '2025-04-25 13:00:00', 2399.00, 1, 2, 'Completed'),
+(10, 15, 7, '2025-04-19 08:00:00', '2025-04-19 09:00:00', 699.00, 1, NULL, 'Scheduled'),
+(11, 15, 7, '2025-04-19 09:00:00', '2025-04-19 10:00:00', 699.00, 1, NULL, 'In Progress'),
+(9, 15, 7, '2025-04-20 11:00:00', '2025-04-20 12:00:00', 699.00, 1, NULL, 'Completed'),
+(16, 15, 8, '2025-04-21 08:00:00', '2025-04-21 09:00:00', 1899.00, 1, 3, 'Completed');
 
 -- --------------------------------------------------------
 
@@ -251,10 +269,19 @@ INSERT INTO `scheduleemployee` (`CustomerUserID`, `OfferingID`, `StartDate`, `En
 (3, 1, '2025-03-25 10:00:00', '2025-03-25 11:00:00', 2),
 (11, 1, '2025-04-19 16:03:00', '2025-04-19 17:03:00', 1),
 (11, 1, '2025-04-22 12:00:00', '2025-04-22 13:00:00', 2),
+(11, 6, '2025-04-19 08:00:00', '2025-04-19 09:00:00', 12),
 (11, 7, '2025-04-19 10:00:00', '2025-04-19 11:00:00', 12),
 (11, 7, '2025-04-21 08:00:00', '2025-04-21 09:00:00', 2),
 (11, 7, '2025-04-22 16:00:00', '2025-04-22 17:00:00', 2),
-(11, 8, '2025-04-22 17:00:00', '2025-04-22 18:00:00', 2);
+(11, 8, '2025-04-22 17:00:00', '2025-04-22 18:00:00', 2),
+(15, 6, '2025-04-20 08:00:00', '2025-04-20 09:00:00', 14),
+(15, 6, '2025-04-21 09:00:00', '2025-04-21 10:00:00', 2),
+(15, 6, '2025-04-21 10:00:00', '2025-04-21 11:00:00', 2),
+(15, 6, '2025-04-25 12:00:00', '2025-04-25 13:00:00', 12),
+(15, 7, '2025-04-19 08:00:00', '2025-04-19 09:00:00', 2),
+(15, 7, '2025-04-19 09:00:00', '2025-04-19 10:00:00', 12),
+(15, 7, '2025-04-20 11:00:00', '2025-04-20 12:00:00', 14),
+(15, 8, '2025-04-21 08:00:00', '2025-04-21 09:00:00', 14);
 
 -- --------------------------------------------------------
 
@@ -324,7 +351,35 @@ INSERT INTO `users` (`UserID`, `Password`, `PhoneNumber`, `FirstName`, `LastName
 (10, '$2y$10$2LXzcPyjqQFhSOqbSh39rugIQFh1kKMcw57XUqufCKPcRX4GApN1K', '1234567890', 'bobby', 'brar', 'bobby@gmail.com', 'Customer', '2025-04-18 02:17:36'),
 (11, '$2y$10$xjU5RnT0pLr0Gqn6N7e50eZKP7RVK35FZw.uuUw5ZLE5/iV3WU1JS', '5877034154', 'F', 'a', 'fa@gmail.com', 'Customer', '2025-04-18 18:34:03'),
 (12, '$2y$10$.V2kGUFnxIv2RE76fI/1POT6Dtg396s0eFC7OjfFyENhviFwUN2Py', NULL, 'John', 'cena', 'ohn.cena@wraplab.com', 'Employee', '2025-04-19 14:08:59'),
-(13, 'changeme123', NULL, 'Joe', 'mama', 'oe.mama@wraplab.com', 'Employee', '2025-04-19 14:11:21');
+(13, 'changeme123', NULL, 'Joe', 'mama', 'oe.mama@wraplab.com', 'Employee', '2025-04-19 14:11:21'),
+(14, '$2y$10$zb9eLxBEYV/qU6YIPU7YJ.KCBR6I7LKY3iz592GhgiN3NVfUyarTu', NULL, 'bill', 'burr', 'bill.burr@wraplab.com', 'Employee', '2025-04-19 15:13:17'),
+(15, '$2y$10$W.Gcsri2FAjmRlXEIQthNedV.bROazJyvShF428odW.0TN1HX4TS.', '1234567890', 'j', 'b', 'jb@gmail.com', 'Customer', '2025-04-19 15:15:51'),
+(16, '$2y$10$/7hoZHR2ivzY2OyR5j5vJOddc7bCtVOixlciIZohGXZfKI1ybdmdK', NULL, 'Jose', 'm', 'ose.m@wraplab.com', 'Employee', '2025-04-19 17:11:31');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `Vehicle`
+--
+
+CREATE TABLE `Vehicle` (
+  `VehicleID` int(11) NOT NULL,
+  `CustomerUserID` int(11) NOT NULL,
+  `Make` varchar(50) NOT NULL,
+  `Model` varchar(50) NOT NULL,
+  `Year` int(11) NOT NULL,
+  `VINNumber` varchar(50) DEFAULT NULL,
+  `Color` varchar(30) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `Vehicle`
+--
+
+INSERT INTO `Vehicle` (`VehicleID`, `CustomerUserID`, `Make`, `Model`, `Year`, `VINNumber`, `Color`) VALUES
+(1, 15, 'toyota', 'corrola', 1602, NULL, NULL),
+(2, 15, 'lamborghini', 'tractor', 1788, NULL, NULL),
+(3, 15, 'h', 'j', 1234, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -403,13 +458,14 @@ ALTER TABLE `feedback`
   ADD KEY `CustomerUserID` (`CustomerUserID`);
 
 --
--- Indexes for table `schedule`
+-- Indexes for table `Schedule`
 --
-ALTER TABLE `schedule`
+ALTER TABLE `Schedule`
   ADD PRIMARY KEY (`CustomerUserID`,`OfferingID`,`StartDate`,`EndDate`),
   ADD UNIQUE KEY `ScheduleID` (`ScheduleID`),
   ADD KEY `OfferingID` (`OfferingID`),
-  ADD KEY `AdminUserID` (`AdminUserID`);
+  ADD KEY `AdminUserID` (`AdminUserID`),
+  ADD KEY `VehicleID` (`VehicleID`);
 
 --
 -- Indexes for table `scheduleemployee`
@@ -432,6 +488,13 @@ ALTER TABLE `users`
   ADD UNIQUE KEY `Email` (`Email`);
 
 --
+-- Indexes for table `Vehicle`
+--
+ALTER TABLE `Vehicle`
+  ADD PRIMARY KEY (`VehicleID`),
+  ADD KEY `CustomerUserID` (`CustomerUserID`);
+
+--
 -- AUTO_INCREMENT for dumped tables
 --
 
@@ -445,31 +508,37 @@ ALTER TABLE `discountcoupon`
 -- AUTO_INCREMENT for table `employeeavailability`
 --
 ALTER TABLE `employeeavailability`
-  MODIFY `AvailabilityID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
+  MODIFY `AvailabilityID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=54;
 
 --
 -- AUTO_INCREMENT for table `feedback`
 --
 ALTER TABLE `feedback`
-  MODIFY `FeedbackID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `FeedbackID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
--- AUTO_INCREMENT for table `schedule`
+-- AUTO_INCREMENT for table `Schedule`
 --
-ALTER TABLE `schedule`
-  MODIFY `ScheduleID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+ALTER TABLE `Schedule`
+  MODIFY `ScheduleID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT for table `serviceoffering`
 --
 ALTER TABLE `serviceoffering`
-  MODIFY `OfferingID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `OfferingID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `UserID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `UserID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+
+--
+-- AUTO_INCREMENT for table `Vehicle`
+--
+ALTER TABLE `Vehicle`
+  MODIFY `VehicleID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- Constraints for dumped tables
@@ -527,12 +596,19 @@ ALTER TABLE `feedback`
   ADD CONSTRAINT `feedback_ibfk_1` FOREIGN KEY (`CustomerUserID`) REFERENCES `customer` (`UserID`);
 
 --
--- Constraints for table `schedule`
+-- Constraints for table `Schedule`
 --
-ALTER TABLE `schedule`
+ALTER TABLE `Schedule`
+  ADD CONSTRAINT `fk_schedule_vehicle` FOREIGN KEY (`VehicleID`) REFERENCES `Vehicle` (`VehicleID`) ON DELETE SET NULL,
   ADD CONSTRAINT `schedule_ibfk_1` FOREIGN KEY (`CustomerUserID`) REFERENCES `customer` (`UserID`),
   ADD CONSTRAINT `schedule_ibfk_2` FOREIGN KEY (`OfferingID`) REFERENCES `serviceoffering` (`OfferingID`),
   ADD CONSTRAINT `schedule_ibfk_3` FOREIGN KEY (`AdminUserID`) REFERENCES `admin` (`UserID`);
+
+--
+-- Constraints for table `Vehicle`
+--
+ALTER TABLE `Vehicle`
+  ADD CONSTRAINT `fk_vehicle_customer` FOREIGN KEY (`CustomerUserID`) REFERENCES `customer` (`UserID`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
