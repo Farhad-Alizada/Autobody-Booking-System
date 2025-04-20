@@ -55,9 +55,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
   }
 
-  // 4) phone: 10 digits
-  if (!preg_match('/^\d{10}$/',$phone)) {
-    $errors[] = "Phone must be exactly 10 digits.";
+  // 4) phone: allow formats like 569-098-9999, (569)098-9999 etc.
+  //    strip out everything except digits, then require exactly 10
+  $cleanPhone = preg_replace('/\D+/', '', $phone);
+  if (strlen($cleanPhone) !== 10) {
+    $errors[] = "Phone must contain exactly 10 digits.";
+  } else {
+    // normalize to digits-only before storing
+    $phone = $cleanPhone;
   }
 
   // 5) preferred contact
@@ -107,5 +112,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // If someone GETs this PHP directly, just redirect to the form
-header('Location: signup.html');
+header('Location: login.html');
 exit;

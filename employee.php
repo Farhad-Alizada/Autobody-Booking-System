@@ -25,12 +25,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['availability_id'])) {
     exit();
 }
 
-// ——— Fetch profile info ———
+// ——— Fetch profile info (now including job, specialization & address) ———
 $stmt = $pdo->prepare("
-    SELECT FirstName, LastName, Email, PhoneNumber
-      FROM Users
-     WHERE UserID = ?
+    SELECT 
+      U.FirstName, 
+      U.LastName, 
+      U.Email, 
+      U.PhoneNumber,
+      E.JobTitle,
+      E.Specialization,
+      E.Address
+    FROM Users U
+    JOIN Employee E ON U.UserID = E.UserID
+    WHERE U.UserID = ?
 ");
+
+
 $stmt->execute([$employeeID]);
 $employee = $stmt->fetch(PDO::FETCH_ASSOC) 
           ?: ['FirstName'=>'','LastName'=>'','Email'=>'','PhoneNumber'=>''];
@@ -116,6 +126,9 @@ $avails = $avQ->fetchAll(PDO::FETCH_ASSOC);
                 <p><strong>Name:</strong> <?= htmlspecialchars("{$employee['FirstName']} {$employee['LastName']}") ?></p>
                 <p><strong>Email:</strong> <?= htmlspecialchars($employee['Email']) ?></p>
                 <p><strong>Phone:</strong> <?= htmlspecialchars($employee['PhoneNumber']) ?></p>
+                <p><strong>Job Title:</strong> <?= htmlspecialchars($employee['JobTitle']) ?></p>
+                <p><strong>Specialization:</strong> <?= htmlspecialchars($employee['Specialization']) ?></p>
+                <p><strong>Address:</strong> <?= htmlspecialchars($employee['Address']) ?></p>
               </div>
             </div>
 
