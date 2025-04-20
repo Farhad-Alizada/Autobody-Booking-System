@@ -149,6 +149,34 @@ $avails = $avQ->fetchAll(PDO::FETCH_ASSOC);
               </div>
             </div>
 
+            <h4 class="mb-3">Edit Personal Info</h4>
+            <form action="update_profile_employee.php" method="POST" class="mb-4">
+              <div class="mb-2">
+                <label for="phone" class="form-label">Phone Number</label>
+                <input
+                  type="text"
+                  id="phone"
+                  name="phone"
+                  class="form-control"
+                  value="<?= htmlspecialchars($employee['PhoneNumber']) ?>"
+                  required
+                >
+              </div>
+              <div class="mb-2">
+                <label for="address" class="form-label">Address</label>
+                <input
+                  type="text"
+                  id="address"
+                  name="address"
+                  class="form-control"
+                  value="<?= htmlspecialchars($employee['Address']) ?>"
+                  required
+                >
+              </div>
+              <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+            </form>
+
+
             <h4 class="mb-3">Change Password</h4>
             <form id="password-form" action="update_password_employee.php" method="POST" class="row g-3">
               <div class="col-12">
