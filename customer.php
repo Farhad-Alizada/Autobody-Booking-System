@@ -13,19 +13,23 @@ $stmt       = $pdo->query("SELECT OfferingID, OfferingName FROM ServiceOffering"
 $offerings  = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // 2) Fetch all employees
-$empRows    = $pdo->query("
-    SELECT UserID, FirstName, LastName
-      FROM Users
-     WHERE AccessLevel = 'Employee'
-")->fetchAll(PDO::FETCH_ASSOC);
+$empRows = $pdo->query(
+  "SELECT U.UserID
+        ,U.FirstName
+        ,U.LastName
+        ,E.Specialization
+     FROM Users U
+     JOIN Employee E ON U.UserID = E.UserID
+    WHERE U.AccessLevel = 'Employee'"
+)->fetchAll(PDO::FETCH_ASSOC);
 
 // 3) Fetch all future availability slots
-$slotsStmt  = $pdo->prepare("
-    SELECT EmployeeUserID, AvailabilityDate, StartTime, EndTime
+$slotsStmt  = $pdo->prepare(
+    "SELECT EmployeeUserID, AvailabilityDate, StartTime, EndTime
       FROM EmployeeAvailability
      WHERE AvailabilityDate >= CURDATE()
-     ORDER BY AvailabilityDate, StartTime
-");
+     ORDER BY AvailabilityDate, StartTime"
+);
 $slotsStmt->execute();
 $allSlots   = $slotsStmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
@@ -65,11 +69,33 @@ $allSlots   = $slotsStmt->fetchAll(PDO::FETCH_ASSOC);
             <select id="serviceSelect" name="service_id" class="form-select" required>
               <option value="">Choose a service...</option>
               <?php foreach ($offerings as $off): ?>
-                <option value="<?= $off['OfferingID'] ?>">
+                <option value="<?= $off['OfferingID'] ?>"><?=""?>
                   <?= htmlspecialchars($off['OfferingName']) ?>
                 </option>
               <?php endforeach; ?>
             </select>
+          </div>
+
+          <!-- Vehicle Information -->
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label for="vehicleMake" class="form-label">Vehicle Make</label>
+              <input type="text" id="vehicleMake" name="vehicle_make" class="form-control" placeholder="e.g., Toyota" required>
+            </div>
+            <div class="col-md-6">
+              <label for="vehicleModel" class="form-label">Vehicle Model</label>
+              <input type="text" id="vehicleModel" name="vehicle_model" class="form-control" placeholder="e.g., Corolla" required>
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-4">
+              <label for="vehicleYear" class="form-label">Vehicle Year</label>
+              <input type="number" id="vehicleYear" name="vehicle_year" class="form-control" placeholder="e.g., 2021" required>
+            </div>
+            <div class="col-md-8">
+              <label for="vinNumber" class="form-label">VIN Number (Optional)</label>
+              <input type="text" id="vinNumber" name="vin_number" class="form-control" placeholder="e.g., 1HGCM82633A123456">
+            </div>
           </div>
 
           <!-- Date / Time / Employee -->
@@ -87,10 +113,13 @@ $allSlots   = $slotsStmt->fetchAll(PDO::FETCH_ASSOC);
             <div class="col-md-4">
               <label for="employeeSelect" class="form-label">Preferred Employee</label>
               <select id="employeeSelect" name="employee_id" class="form-select">
-                <option value="">No preference</option>
-                <?php foreach ($empRows as $e): ?>
-                  <option value="<?= $e['UserID'] ?>">
-                    <?= htmlspecialchars($e['FirstName'].' '.$e['LastName']) ?>
+              <option value="">No preference</option>
+  <?php foreach ($empRows as $e): ?>
+    <option
+      value="<?= $e['UserID'] ?>"
+      data-specialization="<?= htmlspecialchars($e['Specialization']) ?>"
+    >
+      <?= htmlspecialchars($e['FirstName'].' '.$e['LastName']) ?>
                   </option>
                 <?php endforeach; ?>
               </select>
@@ -124,7 +153,9 @@ $allSlots   = $slotsStmt->fetchAll(PDO::FETCH_ASSOC);
             <select id="rating" name="rating" class="form-select" required>
               <option value="">Choose a rating...</option>
               <?php for ($i=1; $i<=5; $i++): ?>
-                <option value="<?= $i ?>"><?= $i ?> star<?= $i>1?'s':'' ?></option>
+                <option value="<?= $i ?>"><?=""?>
+                  <?= $i ?> star<?= $i>1?'s':'' ?>
+                </option>
               <?php endfor; ?>
             </select>
           </div>
@@ -145,7 +176,6 @@ $allSlots   = $slotsStmt->fetchAll(PDO::FETCH_ASSOC);
         .then(html => document.getElementById('appointments-container').innerHTML = html);
     });
   </script>
-
   <!-- Availability & Employee Filter -->
   <script>
     const rawSlots     = <?= json_encode($allSlots) ?>;
@@ -170,7 +200,6 @@ $allSlots   = $slotsStmt->fetchAll(PDO::FETCH_ASSOC);
         return;
       }
       timeSelect.disabled = false;
-      // build unique time options with data-emps
       const seen = new Set();
       slots.forEach(s => {
         const t0 = s.StartTime.slice(0,5);
@@ -179,7 +208,6 @@ $allSlots   = $slotsStmt->fetchAll(PDO::FETCH_ASSOC);
         if (!seen.has(label)) {
           seen.add(label);
           const opt = document.createElement('option');
-          // list employees who cover that slot
           const emps = slots
             .filter(x => x.StartTime.slice(0,5)===t0)
             .map(x => x.EmployeeUserID);
@@ -205,6 +233,26 @@ $allSlots   = $slotsStmt->fetchAll(PDO::FETCH_ASSOC);
         }
       });
     }
+  </script>
+
+  <!-- Specialization Filter -->
+  <script>
+    const serviceSelect  = document.getElementById('serviceSelect');
+    const employeeSelect = document.getElementById('employeeSelect');
+    const origEmpOpts    = Array.from(employeeSelect.options);
+
+    serviceSelect.addEventListener('change', () => {
+      const chosenService = serviceSelect.selectedOptions[0]?.textContent;
+      employeeSelect.innerHTML = '';
+      // always re‑add “No preference”
+      employeeSelect.append(origEmpOpts[0].cloneNode(true));
+      // then re‑add only those matching the chosen service
+      origEmpOpts.slice(1).forEach(opt => {
+        if (!chosenService || opt.dataset.specialization === chosenService) {
+          employeeSelect.append(opt.cloneNode(true));
+        }
+      });
+    });
   </script>
 </body>
 </html>

@@ -83,14 +83,47 @@ $appointments = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     <h2 class="mt-5" id="availability">Set Your Daily Availability</h2>
 <form action="set_availability.php" method="POST">
-  <input type="date" name="availability_date" required value="<?=date('Y-m-d')?>">
-  <br>Select 1-hour blocks you can work:<br>
-  <?php foreach (range(8, 17) as $hour): ?>
-    <input type="checkbox" name="time_slots[]" value="<?=sprintf('%02d:00:00', $hour)?>">
-    <?=sprintf('%02d:00–%02d:00', $hour, $hour+1)?><br>
-  <?php endforeach; ?>
-  <button type="submit" class="btn btn-primary mt-2">Save Availability</button>
+  <div class="mb-3">
+    <label for="availability_date" class="form-label">Date</label>
+    <input 
+      type="date" 
+      id="availability_date" 
+      name="availability_date" 
+      class="form-control w-auto" 
+      required 
+      value="<?= date('Y-m-d') ?>"
+    >
+  </div>
+
+  <p>Select 1‑hour blocks you can work:</p>
+  <div class="row gx-3 gy-2">
+    <?php 
+      $timeSlots = range(8,17);
+      foreach ($timeSlots as $hour):
+        $start = sprintf('%02d:00', $hour);
+        $end   = sprintf('%02d:00', $hour+1);
+        $slotId = str_replace(':','',$start);
+    ?>
+      <div class="col-6 col-md-4 col-lg-3">
+        <div class="form-check">
+          <input 
+            class="form-check-input" 
+            type="checkbox" 
+            name="time_slots[]" 
+            value="<?= $start ?>" 
+            id="slot-<?= $slotId ?>"
+          >
+          <label class="form-check-label" for="slot-<?= $slotId ?>">
+            <?= $start ?> – <?= $end ?>
+          </label>
+        </div>
+      </div>
+    <?php endforeach; ?>
+  </div>
+
+  <button type="submit" class="btn btn-primary mt-3">Save Availability</button>
 </form>
+
 
     <h3 class="mt-4">Your Upcoming Availabilities</h3>
     <?php

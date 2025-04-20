@@ -6,6 +6,9 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['AccessLevel'] !== 'Admin') {
   header('Location: login.html');
   exit();
 }
+$serviceOfferings = $pdo
+  ->query("SELECT OfferingID, OfferingName FROM ServiceOffering ORDER BY OfferingName")
+  ->fetchAll(PDO::FETCH_ASSOC);
 
 // ── fetch appointments by status ─────────────────────────────────────────
 function fetchAppointments($pdo, $status) {
@@ -328,10 +331,17 @@ $employees = $pdo->query("
           <label class="form-label">Job Title</label>
           <input name="job_title" class="form-control" required>
         </div>
-        <div class="col-md-4">
-          <label class="form-label">Specialization</label>
-          <input name="specialization" class="form-control" required>
-        </div>
+       <div class="col-md-4">
+  <label class="form-label">Specialization</label>
+  <select name="specialization" class="form-select" required>
+    <option value="">Choose one…</option>
+    <?php foreach($serviceOfferings as $svc): ?>
+      <option value="<?= htmlspecialchars($svc['OfferingName']) ?>">
+        <?= htmlspecialchars($svc['OfferingName']) ?>
+      </option>
+    <?php endforeach; ?>
+  </select>
+</div>
         <div class="col-12 text-end">
           <button type="submit" class="btn btn-primary">Add Employee</button>
         </div>
