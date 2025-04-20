@@ -4,21 +4,38 @@ require_once 'db_connect.php';
 
 // only employees
 if (!isset($_SESSION['user']) || $_SESSION['user']['AccessLevel'] !== 'Employee') {
-  header('Location: login.html');
-  exit();
+    header('Location: login.html');
+    exit();
 }
 
-// fetch current employee info
+$employeeID = $_SESSION['user']['UserID'];
+
+// ——— Handle availability deletion ———
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['availability_id'])) {
+    $stmt = $pdo->prepare("
+        DELETE FROM EmployeeAvailability
+         WHERE AvailabilityID = :id
+           AND EmployeeUserID = :empID
+    ");
+    $stmt->execute([
+        ':id'    => $_POST['availability_id'],
+        ':empID' => $employeeID
+    ]);
+    header("Location: employee.php");
+    exit();
+}
+
+// ——— Fetch profile info ———
 $stmt = $pdo->prepare("
-  SELECT FirstName, LastName, Email, PhoneNumber
-    FROM Users
-   WHERE UserID = ?
+    SELECT FirstName, LastName, Email, PhoneNumber
+      FROM Users
+     WHERE UserID = ?
 ");
-$stmt->execute([$_SESSION['user']['UserID']]);
-$employee = $stmt->fetch(PDO::FETCH_ASSOC)
+$stmt->execute([$employeeID]);
+$employee = $stmt->fetch(PDO::FETCH_ASSOC) 
           ?: ['FirstName'=>'','LastName'=>'','Email'=>'','PhoneNumber'=>''];
 
-// fetch tasks assigned to this employee
+// ——— Fetch tasks assigned to this employee ———
 $stmt = $pdo->prepare("
     SELECT 
         S.ScheduleID,
@@ -41,8 +58,19 @@ $stmt = $pdo->prepare("
     WHERE SE.EmployeeUserID = :emp
     ORDER BY S.StartDate ASC
 ");
-$stmt->execute([':emp' => $_SESSION['user']['UserID']]);
+$stmt->execute([':emp' => $employeeID]);
 $appointments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// ——— Fetch upcoming availabilities ———
+$avQ = $pdo->prepare("
+    SELECT AvailabilityID, AvailabilityDate, StartTime, EndTime
+      FROM EmployeeAvailability
+     WHERE EmployeeUserID = :eid
+       AND AvailabilityDate >= CURDATE()
+     ORDER BY AvailabilityDate, StartTime
+");
+$avQ->execute([':eid' => $employeeID]);
+$avails = $avQ->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -74,7 +102,7 @@ $appointments = $stmt->fetchAll(PDO::FETCH_ASSOC);
     </ul>
   </nav>
 
-  <!-- MAIN CONTENT (30% / 70% split) -->
+  <!-- MAIN CONTENT -->
   <div class="flex-grow-1">
     <div class="container-fluid p-4">
       <div class="row">
@@ -124,33 +152,36 @@ $appointments = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         <!-- TASKS, AVAILABILITY & HISTORY (70%) -->
         <div class="col-lg-9">
+
           <!-- MY TASKS -->
           <section id="my-tasks" class="mb-5">
             <h3 class="mb-4">My Tasks</h3>
             <?php if (empty($appointments)): ?>
               <p>No current tasks.</p>
-            <?php else: foreach ($appointments as $appt): ?>
-              <?php if ($appt['Status'] !== 'Completed'): ?>
-                <div class="card mb-3 p-3">
-                  <strong>Customer:</strong> <?= htmlspecialchars($appt['CustomerFirstName'] . ' ' . $appt['CustomerLastName']) ?><br>
-                  <strong>Service:</strong> <?= htmlspecialchars($appt['OfferingName']) ?><br>
-                  <strong>Date:</strong> <?= date('Y-m-d H:i', strtotime($appt['StartDate'])) ?><br>
+            <?php else: ?>
+              <?php foreach ($appointments as $appt): ?>
+                <?php if ($appt['Status'] !== 'Completed'): ?>
+                  <div class="card mb-3 p-3">
+                    <strong>Customer:</strong> <?= htmlspecialchars($appt['CustomerFirstName'].' '.$appt['CustomerLastName']) ?><br>
+                    <strong>Service:</strong> <?= htmlspecialchars($appt['OfferingName']) ?><br>
+                    <strong>Date:</strong> <?= date('Y-m-d H:i', strtotime($appt['StartDate'])) ?><br>
 
-                  <form method="POST" action="update_status.php" class="mt-2">
-                    <input type="hidden" name="customer_id" value="<?= $appt['CustomerUserID'] ?>">
-                    <input type="hidden" name="offering_id"  value="<?= $appt['OfferingID'] ?>">
-                    <input type="hidden" name="start_date"   value="<?= $appt['StartDate'] ?>">
-                    <input type="hidden" name="end_date"     value="<?= $appt['EndDate'] ?>">
-                    <select name="new_status" class="form-select w-auto d-inline">
-                      <option <?= $appt['Status']=='Scheduled'   ? 'selected':'' ?>>Scheduled</option>
-                      <option <?= $appt['Status']=='In Progress' ? 'selected':'' ?>>In Progress</option>
-                      <option <?= $appt['Status']=='Completed'   ? 'selected':'' ?>>Completed</option>
-                    </select>
-                    <button type="submit" class="btn btn-dark btn-sm">Update</button>
-                  </form>
-                </div>
-              <?php endif; ?>
-            <?php endforeach; endif; ?>
+                    <form method="POST" action="update_status.php" class="mt-2">
+                      <input type="hidden" name="customer_id" value="<?= $appt['CustomerUserID'] ?>">
+                      <input type="hidden" name="offering_id"  value="<?= $appt['OfferingID'] ?>">
+                      <input type="hidden" name="start_date"   value="<?= $appt['StartDate'] ?>">
+                      <input type="hidden" name="end_date"     value="<?= $appt['EndDate'] ?>">
+                      <select name="new_status" class="form-select w-auto d-inline">
+                        <option <?= $appt['Status']=='Scheduled'   ? 'selected':'' ?>>Scheduled</option>
+                        <option <?= $appt['Status']=='In Progress' ? 'selected':'' ?>>In Progress</option>
+                        <option <?= $appt['Status']=='Completed'   ? 'selected':'' ?>>Completed</option>
+                      </select>
+                      <button type="submit" class="btn btn-dark btn-sm">Update</button>
+                    </form>
+                  </div>
+                <?php endif; ?>
+              <?php endforeach; ?>
+            <?php endif; ?>
           </section>
 
           <!-- AVAILABILITY -->
@@ -195,13 +226,34 @@ $appointments = $stmt->fetchAll(PDO::FETCH_ASSOC);
             </form>
           </section>
 
+          <!-- UPCOMING AVAILABILITIES -->
+          <section class="mb-5">
+            <h3>Your Upcoming Availabilities</h3>
+            <?php if (empty($avails)): ?>
+              <p>No availabilities set.</p>
+            <?php else: ?>
+              <?php foreach ($avails as $av): ?>
+                <div class="alert alert-secondary d-flex justify-content-between align-items-center">
+                  <div>
+                    📅 <strong><?= htmlspecialchars($av['AvailabilityDate']) ?></strong> |
+                    ⏰ <?= htmlspecialchars(substr($av['StartTime'],0,5)) ?>–<?= htmlspecialchars(substr($av['EndTime'],0,5)) ?>
+                  </div>
+                  <form method="POST" action="employee.php" onsubmit="return confirm('Remove this slot?')">
+                    <input type="hidden" name="availability_id" value="<?= $av['AvailabilityID'] ?>">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                  </form>
+                </div>
+              <?php endforeach; ?>
+            <?php endif; ?>
+          </section>
+
           <!-- APPOINTMENT HISTORY -->
           <section id="history">
             <h3 class="mb-4">Appointment History</h3>
             <?php foreach ($appointments as $appt): ?>
               <?php if ($appt['Status'] === 'Completed'): ?>
                 <div class="card mb-3 p-3">
-                  <strong>Customer:</strong> <?= htmlspecialchars($appt['CustomerFirstName'] . ' ' . $appt['CustomerLastName']) ?><br>
+                  <strong>Customer:</strong> <?= htmlspecialchars($appt['CustomerFirstName'].' '.$appt['CustomerLastName']) ?><br>
                   <strong>Service:</strong> <?= htmlspecialchars($appt['OfferingName']) ?><br>
                   <strong>Date:</strong> <?= date('Y-m-d H:i', strtotime($appt['StartDate'])) ?><br>
                   <span class="badge bg-success">Completed</span>
@@ -209,8 +261,8 @@ $appointments = $stmt->fetchAll(PDO::FETCH_ASSOC);
               <?php endif; ?>
             <?php endforeach; ?>
           </section>
-        </div>
 
+        </div><!-- /.col-lg-9 -->
       </div><!-- /.row -->
     </div><!-- /.container-fluid -->
   </div><!-- /.flex-grow-1 -->
@@ -218,7 +270,7 @@ $appointments = $stmt->fetchAll(PDO::FETCH_ASSOC);
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     // ── Password mismatch & length check ────────────────────────────────────────
-    document.getElementById('password-form').addEventListener('submit', function(e) {
+    document.getElementById('password-form')?.addEventListener('submit', function(e) {
       const n = document.getElementById('new_pwd').value.trim();
       const c = document.getElementById('confirm_pwd').value.trim();
       if (!n || !c) {

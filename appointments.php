@@ -12,7 +12,7 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['AccessLevel'] !== 'Customer'
 $customerID = $_SESSION['user']['UserID'];
 
 try {
-    // 2) Fetch appointments + all the related info (no V.Color)
+    // 2) Fetch appointments + all the related info
     $stmt = $pdo->prepare("
         SELECT
             S.ScheduleID,
@@ -56,19 +56,20 @@ try {
         exit();
     }
 
-    // 4) Render each appointment + modal (no Color line)
+    // 4) Render each appointment + modal
     foreach ($appointments as $appt) {
-        $id        = (int)$appt['ScheduleID'];
-        $name      = htmlspecialchars($appt['OfferingName']);
-        $desc      = nl2br(htmlspecialchars($appt['ServiceDescription']));
-        $currency  = htmlspecialchars($appt['Currency']);
-        $price     = number_format($appt['Price'], 2);
-        $startDT   = strtotime($appt['StartDate']);
-        $date      = date('Y-m-d', $startDT);
-        $t0        = date('g:ia', $startDT);
-        $t1        = date('g:ia', strtotime($appt['EndDate']));
-        $status    = htmlspecialchars($appt['Status']);
+        $id         = (int)$appt['ScheduleID'];
+        $name       = htmlspecialchars($appt['OfferingName']);
+        $desc       = nl2br(htmlspecialchars($appt['ServiceDescription']));
+        $currency   = htmlspecialchars($appt['Currency']);
+        $price      = number_format($appt['Price'], 2);
+        $startDT    = strtotime($appt['StartDate']);
+        $date       = date('Y-m-d', $startDT);
+        $t0         = date('g:ia', $startDT);
+        $t1         = date('g:ia', strtotime($appt['EndDate']));
+        $status     = htmlspecialchars($appt['Status']);
 
+        // badge color
         switch ($status) {
             case 'Scheduled':   $badge = 'bg-info';    break;
             case 'In Progress': $badge = 'bg-warning'; break;
@@ -77,17 +78,18 @@ try {
         }
 
         // vehicle
-        $make   = htmlspecialchars($appt['Make']);
-        $model  = htmlspecialchars($appt['Model']);
-        $year   = (int)$appt['Year'];
-        $vin    = htmlspecialchars($appt['VINNumber']);
+        $make    = htmlspecialchars($appt['Make']);
+        $model   = htmlspecialchars($appt['Model']);
+        $year    = (int)$appt['Year'];
+        $vin     = htmlspecialchars($appt['VINNumber']);
 
         // employee
-        $empName       = $appt['EmployeeName'] ?: 'Not assigned';
-        $jobTitle      = htmlspecialchars($appt['JobTitle'] ?? '');
-        $specialization= htmlspecialchars($appt['Specialization'] ?? '');
+        $empName        = $appt['EmployeeName'] ?: 'Not assigned';
+        $jobTitle       = htmlspecialchars($appt['JobTitle'] ?? '');
+        $specialization = htmlspecialchars($appt['Specialization'] ?? '');
 
         $modalId = "apptModal{$id}";
+
         echo "
         <div class='col-md-4 mb-4'>
           <div class='card p-3'>
@@ -119,7 +121,7 @@ try {
                     <p><strong>Price:</strong> {$currency}{$price}</p>
                     <p><strong>Description:</strong><br>{$desc}</p>
                     <p><strong>Assigned Employee:</strong> {$empName}";
-        if ($jobTitle)      echo "<br><small>Title: {$jobTitle}</small>";
+        if ($jobTitle)       echo "<br><small>Title: {$jobTitle}</small>";
         if ($specialization) echo "<br><small>Specializes in: {$specialization}</small>";
         echo "</p>
                   </div>
@@ -134,7 +136,17 @@ try {
                 </div>
               </div>
               <div class='modal-footer'>
-                <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>
+                <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>";
+        // 5) Cancel button for non‑completed
+        if ($status !== 'Completed') {
+            echo "
+                <form method='POST' action='cancel_appointment.php' class='d-inline' 
+                      onsubmit=\"return confirm('Are you sure you want to cancel this appointment?');\">
+                  <input type='hidden' name='schedule_id' value='{$id}'>
+                  <button type='submit' class='btn btn-outline-danger'>Cancel Appointment</button>
+                </form>";
+        }
+        echo "
               </div>
             </div>
           </div>
@@ -145,3 +157,4 @@ try {
 } catch (PDOException $e) {
     echo "<p class='text-danger'>Error: " . htmlspecialchars($e->getMessage()) . "</p>";
 }
+?>

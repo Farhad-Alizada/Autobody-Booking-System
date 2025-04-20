@@ -2,72 +2,49 @@
 session_start();
 require_once 'db_connect.php';
 
-// only admins
 if (!isset($_SESSION['user']) || $_SESSION['user']['AccessLevel'] !== 'Admin') {
-  header('Location: login.html');
-  exit();
+    header('Location: login.html');
+    exit();
 }
 
-// fetch current admin info
+// —————————————————————————————
+// 1) Fetch current admin info
+// —————————————————————————————
 $stmt = $pdo->prepare("
-  SELECT FirstName, LastName, Email, PhoneNumber
-    FROM Users
-   WHERE UserID = ?
+    SELECT FirstName, LastName, Email, PhoneNumber
+    FROM users
+    WHERE UserID = ?
 ");
-$stmt->execute([$_SESSION['user']['UserID']]);
+$stmt->execute([ $_SESSION['user']['UserID'] ]);
 $admin = $stmt->fetch(PDO::FETCH_ASSOC)
        ?: ['FirstName'=>'','LastName'=>'','Email'=>'','PhoneNumber'=>''];
 
-// fetch service offerings for add‑employee dropdown
+// —————————————————————————————
+// 2) Fetch all services, offerings, coupons & employees
+// —————————————————————————————
 $serviceOfferings = $pdo
-  ->query("SELECT OfferingID, OfferingName FROM ServiceOffering ORDER BY OfferingName")
-  ->fetchAll(PDO::FETCH_ASSOC);
+    ->query("SELECT OfferingID, OfferingName FROM serviceoffering ORDER BY OfferingName")
+    ->fetchAll(PDO::FETCH_ASSOC);
 
-// helper to pull appointments by status
-function fetchAppointments($pdo, $status) {
-  $stmt = $pdo->prepare("
-    SELECT
-      CONCAT(U.FirstName,' ',U.LastName) AS customer,
-      SO.OfferingName      AS service,
-      S.StartDate,
-      S.EndDate,
-      S.TotalPrice
-    FROM Schedule S
-    JOIN Customer C         ON S.CustomerUserID = C.UserID
-    JOIN Users U            ON C.UserID         = U.UserID
-    JOIN ServiceOffering SO ON S.OfferingID     = SO.OfferingID
-    WHERE S.Status = ?
-    ORDER BY S.StartDate DESC
-  ");
-  $stmt->execute([$status]);
-  return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
-$scheduled  = fetchAppointments($pdo,'Scheduled');
-$inProgress = fetchAppointments($pdo,'In Progress');
-$completed  = fetchAppointments($pdo,'Completed');
-
-// fetch services list
 $services = $pdo
-  ->query("SELECT OfferingID, OfferingName, ServiceDescription, MinPrice, MaxPrice, ImagePath
-           FROM ServiceOffering
-           ORDER BY OfferingID DESC")
-  ->fetchAll(PDO::FETCH_ASSOC);
+    ->query("SELECT OfferingID, OfferingName, ServiceDescription, MinPrice, MaxPrice, ImagePath
+             FROM serviceoffering
+             ORDER BY OfferingID DESC")
+    ->fetchAll(PDO::FETCH_ASSOC);
 
-// fetch coupons for this admin
-$couponsQ = $pdo->prepare("
-  SELECT DC.CouponNumber, DC.DiscountAmount, SO.OfferingName, SO.MaxPrice
-    FROM DiscountCoupon DC
-    JOIN ServiceOffering SO ON DC.OfferingID = SO.OfferingID
-   WHERE DC.AdminUserID = ?
-   ORDER BY DC.CouponNumber ASC
-");
-$couponsQ->execute([$_SESSION['user']['UserID']]);
-$coupons = $couponsQ->fetchAll(PDO::FETCH_ASSOC);
+$coupons = $pdo
+    ->prepare("
+      SELECT DC.CouponNumber, DC.DiscountAmount, SO.OfferingName
+      FROM discountcoupon DC
+      JOIN serviceoffering SO USING(OfferingID)
+      ORDER BY DC.CouponNumber
+    ");
+$coupons->execute();
+$coupons = $coupons->fetchAll(PDO::FETCH_ASSOC);
 
-// fetch all employees (including phone)
 $employees = $pdo
-  ->query("SELECT
-             U.UserID,
+    ->query("
+      SELECT U.UserID,
              CONCAT(U.FirstName,' ',U.LastName) AS name,
              U.Email,
              U.PhoneNumber,
@@ -75,13 +52,93 @@ $employees = $pdo
              E.JobTitle,
              E.Specialization,
              COUNT(SE.EmployeeUserID) AS jobs
-           FROM Employee E
-           JOIN Users U ON E.UserID = U.UserID
-           LEFT JOIN ScheduleEmployee SE ON E.UserID = SE.EmployeeUserID
-           GROUP BY E.UserID")
-  ->fetchAll(PDO::FETCH_ASSOC);
-?>
+      FROM employee E
+      JOIN users U          ON E.UserID = U.UserID
+      LEFT JOIN scheduleemployee SE 
+        ON E.UserID = SE.EmployeeUserID
+      GROUP BY E.UserID
+    ")
+    ->fetchAll(PDO::FETCH_ASSOC);
 
+// —————————————————————————————
+// 3) Helper to pull appointments by status
+// —————————————————————————————
+function fetchAppointments($pdo, $status) {
+    $sql = "
+      SELECT
+        S.ScheduleID,
+        C.UserID            AS CustomerID,
+        CONCAT(CU.FirstName,' ',CU.LastName) AS CustomerName,
+        CU.Email            AS CustomerEmail,
+        CU.PhoneNumber      AS CustomerPhone,
+        C.Address           AS CustomerAddress,
+        SO.OfferingName     AS Service,
+        V.Make, V.Model, V.Year, V.VINNumber,
+        EU.UserID           AS EmployeeID,
+        CONCAT(EU.FirstName,' ',EU.LastName) AS EmployeeName,
+        S.StartDate,
+        S.EndDate
+      FROM Schedule S
+      JOIN serviceoffering SO ON S.OfferingID = SO.OfferingID
+      JOIN customer C         ON S.CustomerUserID = C.UserID
+      JOIN users CU           ON C.UserID         = CU.UserID
+      LEFT JOIN Vehicle V     ON S.VehicleID      = V.VehicleID
+      LEFT JOIN scheduleemployee SE
+        ON S.CustomerUserID = SE.CustomerUserID
+       AND S.OfferingID     = SE.OfferingID
+       AND S.StartDate      = SE.StartDate
+       AND S.EndDate        = SE.EndDate
+      LEFT JOIN users EU     ON SE.EmployeeUserID = EU.UserID
+      WHERE S.Status = ?
+      ORDER BY S.StartDate DESC
+    ";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$status]);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+$sections = [
+  'Scheduled'   => fetchAppointments($pdo,'Scheduled'),
+  'In Progress' => fetchAppointments($pdo,'In Progress'),
+  'Completed'   => fetchAppointments($pdo,'Completed'),
+];
+
+// —————————————————————————————
+// 4) Pull every employee grouped by specialization for reassign dropdown
+// —————————————————————————————
+// —————————————————————————————
+// 4) Pull every employee and group them by their Specialization
+// —————————————————————————————
+// REMOVE this:
+// $allEmps = $pdo
+//     ->query("
+//       SELECT U.UserID,
+//              CONCAT(U.FirstName,' ',U.LastName) AS Name,
+//              E.Specialization
+//       FROM employee E
+//       JOIN users U ON E.UserID = U.UserID
+//     ")
+//     ->fetchAll(PDO::FETCH_GROUP|PDO::FETCH_ASSOC);
+
+// ADD this instead:
+$allEmps = [];
+$emps = $pdo->query("
+  SELECT 
+    U.UserID, 
+    CONCAT(U.FirstName,' ',U.LastName) AS Name, 
+    E.Specialization
+  FROM employee E
+  JOIN users U ON E.UserID = U.UserID
+")->fetchAll(PDO::FETCH_ASSOC);
+
+foreach ($emps as $e) {
+    $allEmps[ $e['Specialization'] ][] = [
+      'UserID' => $e['UserID'],
+      'Name'   => $e['Name']
+    ];
+}
+
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -113,7 +170,7 @@ $employees = $pdo
     </ul>
   </nav>
 
-  <!-- MAIN CONTENT (30% / 70% split) -->
+  <!-- MAIN CONTENT (30% / 70%) -->
   <div class="flex-grow-1">
     <div class="container-fluid p-4">
       <div class="row">
@@ -161,92 +218,82 @@ $employees = $pdo
           </section>
         </div>
 
-    
-      <div class="col-lg-9">
-
-          <!-- APPOINTMENTS HISTORY -->
+        <!-- APPOINTMENTS HISTORY (70%) -->
+        <div class="col-lg-9">
           <section id="appointments-history" class="mb-5">
             <h3 class="mb-4">Appointments History</h3>
-            <!-- Scheduled -->
-            <h5>Scheduled</h5>
-            <table class="table table-sm table-bordered mb-4">
-              <thead class="table-light">
-                <tr>
-                  <th>Customer</th>
-                  <th>Service</th>
-                  <th>Start</th>
-                  <th>End</th>
-                  <th>Price</th>
-                </tr>
-              </thead>
-              <tbody>
-                <?php if (empty($scheduled)): ?>
-                  <tr><td colspan="5" class="text-center">No scheduled appointments.</td></tr>
-                <?php else: foreach ($scheduled as $a): ?>
+            <?php foreach ($sections as $status => $appts): ?>
+              <h5><?=htmlspecialchars($status)?></h5>
+              <table class="table table-sm table-bordered mb-4">
+                <thead class="table-light">
                   <tr>
-                    <td><?=htmlspecialchars($a['customer'])?></td>
-                    <td><?=htmlspecialchars($a['service'])?></td>
-                    <td><?=date('Y-m-d H:i',strtotime($a['StartDate']))?></td>
-                    <td><?=date('Y-m-d H:i',strtotime($a['EndDate']))?></td>
-                    <td>$<?=number_format($a['TotalPrice'],2)?></td>
+                    <th>Customer</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Address</th>
+                    <th>Service</th>
+                    <th>Vehicle</th>
+                    <th>Employee</th>
+                    <th>Start</th>
+                    <th>End</th>
+                    <th>Actions</th>
                   </tr>
-                <?php endforeach; endif; ?>
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  <?php if (empty($appts)): ?>
+                    <tr><td colspan="10" class="text-center">No <?=strtolower($status)?> appointments.</td></tr>
+                  <?php else: foreach ($appts as $a): ?>
+                    <tr>
+                      <td><?=htmlspecialchars($a['CustomerName'])?></td>
+                      <td><?=htmlspecialchars($a['CustomerEmail'])?></td>
+                      <td><?=htmlspecialchars($a['CustomerPhone'])?></td>
+                      <td><?=htmlspecialchars($a['CustomerAddress'])?></td>
+                      <td><?=htmlspecialchars($a['Service'])?></td>
+                      <td>
+                        <?=htmlspecialchars("{$a['Make']} {$a['Model']} ({$a['Year']})")?><br>
+                        VIN: <?=htmlspecialchars($a['VINNumber'] ?? 'N/A')?>
+                      </td>
+                      <td><?=htmlspecialchars($a['EmployeeName'] ?? 'Unassigned')?></td>
+                      <td><?=date('Y-m-d H:i',strtotime($a['StartDate']))?></td>
+                      <td><?=date('Y-m-d H:i',strtotime($a['EndDate']))?></td>
+                      <td class="text-nowrap">
+                        <!-- Delete -->
+                        <form action="delete_appointment.php" method="POST" class="d-inline">
+                          <input type="hidden" name="schedule_id" value="<?=$a['ScheduleID']?>">
+                          <button 
+                            class="btn btn-sm btn-outline-danger"
+                            onclick="return confirm('Delete this appointment?')"
+                          >Delete</button>
+                        </form>
 
-            <!-- In Progress -->
-            <h5>In Progress</h5>
-            <table class="table table-sm table-bordered mb-4">
-              <thead class="table-light">
-                <tr>
-                  <th>Customer</th>
-                  <th>Service</th>
-                  <th>Start</th>
-                  <th>End</th>
-                  <th>Price</th>
-                </tr>
-              </thead>
-              <tbody>
-                <?php if (empty($inProgress)): ?>
-                  <tr><td colspan="5" class="text-center">No in‑progress appointments.</td></tr>
-                <?php else: foreach ($inProgress as $a): ?>
-                  <tr>
-                    <td><?=htmlspecialchars($a['customer'])?></td>
-                    <td><?=htmlspecialchars($a['service'])?></td>
-                    <td><?=date('Y-m-d H:i',strtotime($a['StartDate']))?></td>
-                    <td><?=date('Y-m-d H:i',strtotime($a['EndDate']))?></td>
-                    <td>$<?=number_format($a['TotalPrice'],2)?></td>
-                  </tr>
-                <?php endforeach; endif; ?>
-              </tbody>
-            </table>
-
-            <!-- Completed -->
-            <h5>Completed</h5>
-            <table class="table table-sm table-bordered mb-5">
-              <thead class="table-light">
-                <tr>
-                  <th>Customer</th>
-                  <th>Service</th>
-                  <th>Start</th>
-                  <th>End</th>
-                  <th>Price</th>
-                </tr>
-              </thead>
-              <tbody>
-                <?php if (empty($completed)): ?>
-                  <tr><td colspan="5" class="text-center">No completed appointments.</td></tr>
-                <?php else: foreach ($completed as $a): ?>
-                  <tr>
-                    <td><?=htmlspecialchars($a['customer'])?></td>
-                    <td><?=htmlspecialchars($a['service'])?></td>
-                    <td><?=date('Y-m-d H:i',strtotime($a['StartDate']))?></td>
-                    <td><?=date('Y-m-d H:i',strtotime($a['EndDate']))?></td>
-                    <td>$<?=number_format($a['TotalPrice'],2)?></td>
-                  </tr>
-                <?php endforeach; endif; ?>
-              </tbody>
-            </table>
+                        <!-- Reassign -->
+                        <?php 
+                          $spec = $a['Service'];
+                          $candidates = $allEmps[$spec] ?? [];
+                          if ($candidates):
+                        ?>
+                          <form action="reassign_appointment.php" method="POST" class="d-inline">
+                            <input type="hidden" name="schedule_id" value="<?=$a['ScheduleID']?>">
+                            <select 
+                              name="new_employee_id" 
+                              class="form-select form-select-sm d-inline w-auto"
+                            >
+                              <?php foreach ($candidates as $emp): ?>
+                                <option 
+                                  value="<?=$emp['UserID']?>"
+                                  <?= $emp['UserID']==$a['EmployeeID']?'selected':''?>
+                                ><?=htmlspecialchars($emp['Name'])?></option>
+                              <?php endforeach; ?>
+                            </select>
+                            <button class="btn btn-sm btn-outline-primary">Reassign</button>
+                          </form>
+                        <?php endif; ?>
+                      </td>
+                    </tr>
+                  <?php endforeach; endif; ?>
+                </tbody>
+              </table>
+            <?php endforeach; ?>
           </section>
 
           <!-- ADD SERVICE -->
