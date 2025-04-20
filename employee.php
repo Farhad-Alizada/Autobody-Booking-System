@@ -49,27 +49,44 @@ $employee = $stmt->fetch(PDO::FETCH_ASSOC)
 $stmt = $pdo->prepare("
     SELECT 
         S.ScheduleID,
-        S.CustomerUserID,
-        S.OfferingID,
         S.StartDate,
         S.EndDate,
         S.Status,
-        U.FirstName AS CustomerFirstName,
-        U.LastName  AS CustomerLastName,
-        SO.OfferingName
+
+        -- customer info
+        U.FirstName            AS CustomerFirstName,
+        U.LastName             AS CustomerLastName,
+        U.Email                AS CustomerEmail,
+        U.PhoneNumber          AS CustomerPhone,
+        C.PreferredContact     AS CustomerPref,
+
+        -- service
+        SO.OfferingName,
+
+        -- vehicle (may be NULL)
+        V.Make,
+        V.Model,
+        V.Year,
+        V.VINNumber
     FROM Schedule S
     JOIN ScheduleEmployee SE 
       ON S.CustomerUserID = SE.CustomerUserID
      AND S.OfferingID     = SE.OfferingID
      AND S.StartDate      = SE.StartDate
      AND S.EndDate        = SE.EndDate
+
     JOIN Users U           ON S.CustomerUserID = U.UserID
-    JOIN ServiceOffering SO ON S.OfferingID     = SO.OfferingID
+    JOIN Customer C        ON U.UserID         = C.UserID
+    JOIN ServiceOffering SO ON S.OfferingID    = SO.OfferingID
+
+    LEFT JOIN Vehicle V    ON S.VehicleID      = V.VehicleID
+
     WHERE SE.EmployeeUserID = :emp
     ORDER BY S.StartDate ASC
 ");
 $stmt->execute([':emp' => $employeeID]);
 $appointments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 
 // ——— Fetch upcoming availabilities ———
 $avQ = $pdo->prepare("
@@ -175,13 +192,33 @@ $avails = $avQ->fetchAll(PDO::FETCH_ASSOC);
               <?php foreach ($appointments as $appt): ?>
                 <?php if ($appt['Status'] !== 'Completed'): ?>
                   <div class="card mb-3 p-3">
-                    <strong>Customer:</strong> <?= htmlspecialchars($appt['CustomerFirstName'].' '.$appt['CustomerLastName']) ?><br>
-                    <strong>Service:</strong> <?= htmlspecialchars($appt['OfferingName']) ?><br>
-                    <strong>Date:</strong> <?= date('Y-m-d H:i', strtotime($appt['StartDate'])) ?><br>
+                    <strong>Customer:</strong>
+                      <?= htmlspecialchars($appt['CustomerFirstName'].' '.$appt['CustomerLastName']) ?><br>
+                    <strong>Email:</strong>
+                      <?= htmlspecialchars($appt['CustomerEmail']) ?><br>
+                    <strong>Phone:</strong>
+                      <?= htmlspecialchars($appt['CustomerPhone']) ?><br>
+                    <strong>Preferred Contact:</strong>
+                      <?= htmlspecialchars($appt['CustomerPref']) ?><br>
 
-                    <form method="POST" action="update_status.php" class="mt-2">
-                      <input type="hidden" name="customer_id" value="<?= $appt['CustomerUserID'] ?>">
-                      <input type="hidden" name="offering_id"  value="<?= $appt['OfferingID'] ?>">
+                    <strong>Service:</strong>
+                      <?= htmlspecialchars($appt['OfferingName']) ?><br>
+
+                    <strong>Vehicle:</strong>
+                      <?php if($appt['Make']): ?>
+                        <?= htmlspecialchars("{$appt['Make']} {$appt['Model']} ({$appt['Year']})") ?>
+                        <?php if($appt['VINNumber']): ?>
+                          , VIN <?= htmlspecialchars($appt['VINNumber']) ?>
+                        <?php endif; ?>
+                      <?php else: ?>
+                        N/A
+                      <?php endif; ?>
+                      <br>
+
+                      <strong>Date:</strong>
+                        <?= date('Y-m-d H:i', strtotime($appt['StartDate'])) ?><br>
+                      <?php /* make sure there is NO stray quote or ?> here */ ?>
+                      <form method="POST" action="update_status.php" class="mt-2">
                       <input type="hidden" name="start_date"   value="<?= $appt['StartDate'] ?>">
                       <input type="hidden" name="end_date"     value="<?= $appt['EndDate'] ?>">
                       <select name="new_status" class="form-select w-auto d-inline">

@@ -135,7 +135,7 @@ $allSlots = $allSlots->fetchAll(PDO::FETCH_ASSOC);
                 <input type="password" id="confirm_pwd" name="confirm_password" class="form-control" minlength="6" required>
               </div>
               <div class="col-12">
-                <button type="submit" class="btn btn-primary btn-sm">Change Password</button>
+                <button type="submit" class="btn btn-primary btn-sm">Update Password</button>
               </div>
             </form>
           </section>
