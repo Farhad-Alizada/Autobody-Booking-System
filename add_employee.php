@@ -9,14 +9,20 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['AccessLevel'] !== 'Admin') {
 }
 
 // 1) grab & sanitize
-$fnRaw  = trim($_POST['first_name']  ?? '');
-$lnRaw  = trim($_POST['last_name']   ?? '');
-$addr   = trim($_POST['address']     ?? '');
-$job    = trim($_POST['job_title']   ?? '');
-$spec   = trim($_POST['specialization'] ?? '');
+$fnRaw   = trim($_POST['first_name']       ?? '');
+$lnRaw   = trim($_POST['last_name']        ?? '');
+$addr    = trim($_POST['address']          ?? '');
+$job     = trim($_POST['job_title']        ?? '');
+$spec    = trim($_POST['specialization']   ?? '');
+$phoneRaw= trim($_POST['phone_number']     ?? '');
 
-if (!$fnRaw || !$lnRaw || !$addr || !$job || !$spec) {
-    die("All fields are required.");
+if (!$fnRaw || !$lnRaw || !$addr || !$job || !$spec || !$phoneRaw) {
+    die("All fields are required, including phone number.");
+}
+
+// 1a) phone must be exactly 10 digits
+if (!preg_match('/^\d{10}$/', $phoneRaw)) {
+    die("Phone number must be exactly 10 digits.");
 }
 
 // 2) normalize to Title Case
@@ -28,26 +34,20 @@ $fnSlug = strtolower(preg_replace('/[^a-z]/i', '', $fn));
 $lnSlug = strtolower(preg_replace('/[^a-z]/i', '', $ln));
 
 // local‑part & base email
-$local    = $fnSlug . '.' . $lnSlug;
+$local     = $fnSlug . '.' . $lnSlug;
 $baseEmail = $local . '@wraplab.com';
 
-// 4) find existing emails like “local%” and extract highest suffix
+// 4) find existing emails like “local%” → pick next suffix
 $stmt = $pdo->prepare("SELECT Email FROM Users WHERE Email LIKE ?");
 $stmt->execute([ $local . '%@wraplab.com' ]);
 $all = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
 if (!in_array($baseEmail, $all, true)) {
-    // free to use
     $email = $baseEmail;
 } else {
-    // scan for suffixes
     $max = 0;
     foreach ($all as $e) {
-        if (preg_match(
-            '/^' . preg_quote($local, '/') . '(\d+)@wraplab\.com$/',
-            $e,
-            $m
-        )) {
+        if (preg_match('/^' . preg_quote($local, '/') . '(\d+)@wraplab\.com$/', $e, $m)) {
             $max = max($max, (int)$m[1]);
         }
     }
@@ -57,13 +57,19 @@ if (!in_array($baseEmail, $all, true)) {
 // 5) default password
 $pwd = 'changeme123';
 
-// 6) insert into Users
+// 6) insert into Users (now including PhoneNumber)
 $insU = $pdo->prepare("
     INSERT INTO Users
-      (FirstName, LastName, Email, Password, AccessLevel)
-    VALUES (?, ?, ?, ?, 'Employee')
+      (FirstName, LastName, Email, Password, AccessLevel, PhoneNumber)
+    VALUES (?, ?, ?, ?, 'Employee', ?)
 ");
-$insU->execute([$fn, $ln, $email, password_hash($pwd, PASSWORD_DEFAULT)]);
+$insU->execute([
+    $fn,
+    $ln,
+    $email,
+    password_hash($pwd, PASSWORD_DEFAULT),
+    $phoneRaw
+]);
 $uid = $pdo->lastInsertId();
 
 // 7) insert into Employee

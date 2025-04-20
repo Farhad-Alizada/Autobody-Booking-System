@@ -64,12 +64,13 @@ $couponsQ = $pdo->prepare("
 $couponsQ->execute([$_SESSION['user']['UserID']]);
 $coupons = $couponsQ->fetchAll(PDO::FETCH_ASSOC);
 
-// fetch all employees
+// fetch all employees (including phone)
 $employees = $pdo
   ->query("SELECT
              U.UserID,
              CONCAT(U.FirstName,' ',U.LastName) AS name,
              U.Email,
+             U.PhoneNumber,
              E.Address,
              E.JobTitle,
              E.Specialization,
@@ -80,6 +81,7 @@ $employees = $pdo
            GROUP BY E.UserID")
   ->fetchAll(PDO::FETCH_ASSOC);
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -426,17 +428,24 @@ $employees = $pdo
           <section id="assign-employees" class="mb-5">
             <h3 class="mb-4">Employees</h3>
             <table class="table table-striped align-middle">
-              <thead>
-                <tr>
-                  <th>Name</th><th>Email</th><th>Address</th><th>Job</th>
-                  <th>Specialization</th><th>Jobs</th><th></th>
-                </tr>
-              </thead>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Address</th>
+                <th>Job</th>
+                <th>Specialization</th>
+                <th>Jobs</th>
+                <th></th>
+              </tr>
+            </thead>
               <tbody>
                 <?php foreach ($employees as $e): ?>
                   <tr>
                     <td><?=htmlspecialchars($e['name'])?></td>
                     <td><?=htmlspecialchars($e['Email'])?></td>
+                    <td><?= htmlspecialchars($e['PhoneNumber']) ?></td>
                     <td><?=htmlspecialchars($e['Address'])?></td>
                     <td><?=htmlspecialchars($e['JobTitle'])?></td>
                     <td><?=htmlspecialchars($e['Specialization'])?></td>
@@ -477,6 +486,16 @@ $employees = $pdo
                 <label class="form-label">Last Name</label>
                 <input name="last_name" class="form-control" required>
               </div>
+              <div class="col-md-4">
+              <label class="form-label">Phone Number</label>
+              <input 
+                name="phone_number" 
+                type="text" 
+                class="form-control" 
+                maxlength="10" 
+                required
+              >
+            </div>
               <div class="col-md-4">
                 <label class="form-label">Address</label>
                 <input name="address" class="form-control" required>
