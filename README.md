@@ -91,10 +91,9 @@ A comprehensive PDF user guide is available in our GitHub repository. It covers:
 - Account creation & management  
 - Browsing services & booking flow  
 - Employee & admin workflows  
-- Troubleshooting tips & FAQs  
 
 Download the **User Guide** here:  
-👉 <update link>
+👉 [UserGuide.pdf](https://raw.githubusercontent.com/Farhad-Alizada/Autobody-Booking-System/main/UserGuide.pdf)
 
 ---
 
