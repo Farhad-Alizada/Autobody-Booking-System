@@ -1,9 +1,11 @@
 <?php
-error_reporting(E_ALL);
+// turn on full errors
 ini_set('display_errors', 1);
+error_reporting(E_ALL);
 
 session_start();
 require_once 'db_connect.php';
+
 
 // 1) Auth check
 if (!isset($_SESSION['user']) || $_SESSION['user']['AccessLevel'] !== 'Customer') {
@@ -107,6 +109,30 @@ $priceStmt = $pdo->prepare("
 $priceStmt->execute([':off' => $serviceID]);
 $price = (float) $priceStmt->fetchColumn();
 
+
+// … after you fetch $price …
+$couponNum = !empty($_POST['coupon_number'])
+    ? (int) $_POST['coupon_number']
+    : null;
+
+// look up the discount amount
+$discount = 0.0;
+if ($couponNum) {
+    $c = $pdo->prepare("
+      SELECT DiscountAmount
+        FROM discountcoupon
+       WHERE CouponNumber = ?
+       LIMIT 1
+    ");
+    $c->execute([$couponNum]);
+    if ($r = $c->fetch(PDO::FETCH_ASSOC)) {
+        $discount = (float)$r['DiscountAmount'];
+    }
+}
+
+// subtract (but never go below zero)
+$finalPrice = max(0, $price - $discount);
+
 // 7) Pull the vehicle inputs
 $vehicleMake  = $_POST['vehicle_make'];
 $vehicleModel = $_POST['vehicle_model'];
@@ -136,19 +162,20 @@ try {
     $ins1 = $pdo->prepare("
         INSERT INTO Schedule
           (CustomerUserID, OfferingID, StartDate, EndDate,
-           TotalPrice, AdminUserID, VehicleID, Status)
+           TotalPrice, AdminUserID, VehicleID, Status, CouponNumber)
         VALUES
           (:cust, :off, :start, :end,
-           :price, :admin, :veh, 'Scheduled')
+           :price, :admin, :veh, 'Scheduled', :coupon)
     ");
     $ins1->execute([
         ':cust'   => $customerID,
         ':off'    => $serviceID,
         ':start'  => $startDate,
         ':end'    => $endDate,
-        ':price'  => $price,
+        ':price'  => $finalPrice,
         ':admin'  => $adminID,
-        ':veh'    => $vehicleID
+        ':veh'    => $vehicleID,
+        ':coupon' => $couponNum
     ]);
 
     // 10) Insert into ScheduleEmployee
