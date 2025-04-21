@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'db_connect.php';  // your PDO $pdo
+require_once 'db_connect.php';  
 
 // redirect back to signup.html with errors & old inputs
 function redirect_with_errors(array $errs, array $old=[]) {

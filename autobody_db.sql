@@ -1,12 +1,3 @@
--- phpMyAdmin SQL Dump
--- version 5.2.1
--- https://www.phpmyadmin.net/
---
--- Host: localhost
--- Generation Time: Apr 20, 2025 at 05:26 AM
--- Server version: 10.4.28-MariaDB
--- PHP Version: 8.2.4
-
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
@@ -18,7 +9,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `autobodybooking`
+-- Database: `autobody_db`
 --
 
 -- --------------------------------------------------------
@@ -28,17 +19,15 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE `admin` (
-  `UserID` int(11) NOT NULL,
-  `WebsiteUpdateDate` date DEFAULT NULL,
-  `AdminNotes` text DEFAULT NULL
+  `UserID` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `admin`
 --
 
-INSERT INTO `admin` (`UserID`, `WebsiteUpdateDate`, `AdminNotes`) VALUES
-(1, '2025-03-18', 'Main Admin account');
+INSERT INTO `admin` (`UserID`) VALUES
+(1);
 
 -- --------------------------------------------------------
 
@@ -57,10 +46,8 @@ CREATE TABLE `customer` (
 --
 
 INSERT INTO `customer` (`UserID`, `PreferredContact`, `Address`) VALUES
-(3, 'Email', '123 Main Street'),
-(10, 'Email', '12345 st nw'),
-(11, 'Phone', '123'),
-(15, 'Email', '123');
+(5, 'Phone', '765 Random St, NW, Calgary, AB, Canada'),
+(8, 'Email', '576 Random St, NW, Calgary, AB, Canada');
 
 -- --------------------------------------------------------
 
@@ -97,13 +84,6 @@ CREATE TABLE `dealswith` (
   `EmployeeUserID` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data for table `dealswith`
---
-
-INSERT INTO `dealswith` (`CustomerUserID`, `EmployeeUserID`) VALUES
-(3, 2);
-
 -- --------------------------------------------------------
 
 --
@@ -122,7 +102,7 @@ CREATE TABLE `discountcoupon` (
 --
 
 INSERT INTO `discountcoupon` (`CouponNumber`, `DiscountAmount`, `OfferingID`, `AdminUserID`) VALUES
-(1, 10.00, 1, 1);
+(1, 20.00, 1, 1);
 
 -- --------------------------------------------------------
 
@@ -142,11 +122,11 @@ CREATE TABLE `employee` (
 --
 
 INSERT INTO `employee` (`UserID`, `JobTitle`, `Specialization`, `Address`) VALUES
-(2, 'Tinter', 'Window Tints', '254 Some Street NW Calgary, AB, Canada'),
-(12, 'Performance', 'engine retune', '123 somewhere drive, Alaska, USA'),
-(13, 'PPF instal', 'PPF', '123 which Street Alabama'),
-(14, 'vinyl wrap', 'vinyl wrap', 'aStreet kenya Africa'),
-(16, 'tint', 'Window Tint', 'Zimbabwe drive, Africa');
+(2, 'Engine Tuner', 'Performance Tune', '123 Random St, NW, Calgary, AB, Canada'),
+(3, 'PPF Installer', 'PPF', '456 Random St, NW, Calgary, AB'),
+(4, 'Wrap Installer', 'Vinyl Wrap', '789 Random St, NW, Calgary, AB, Canada'),
+(6, 'Tint Installer', 'Window Tint', '345 Random St, NW, Calgary, AB, Canada'),
+(7, 'Wrap Installer Backup', 'Vinyl Wrap', '234 Random St, NW, Calgary, AB, Canada');
 
 -- --------------------------------------------------------
 
@@ -168,20 +148,54 @@ CREATE TABLE `employeeavailability` (
 --
 
 INSERT INTO `employeeavailability` (`AvailabilityID`, `EmployeeUserID`, `AvailabilityDate`, `Status`, `StartTime`, `EndTime`) VALUES
-(21, 2, '2025-04-19', 'Available', '09:00:00', '10:00:00'),
-(22, 2, '2025-04-19', 'Available', '10:00:00', '11:00:00'),
-(23, 2, '2025-04-19', 'Available', '11:00:00', '12:00:00'),
-(30, 12, '2025-04-20', 'Available', '16:00:00', '17:00:00'),
-(31, 12, '2025-04-20', 'Available', '17:00:00', '18:00:00'),
-(35, 12, '2025-05-02', 'Available', '08:00:00', '09:00:00'),
-(36, 12, '2025-05-02', 'Available', '09:00:00', '10:00:00'),
-(37, 12, '2025-05-02', 'Available', '10:00:00', '11:00:00'),
-(44, 12, '2025-04-25', 'Available', '16:00:00', '17:00:00'),
-(45, 16, '2025-04-24', 'Available', '08:00:00', '09:00:00'),
-(46, 16, '2025-04-24', 'Available', '12:00:00', '13:00:00'),
-(47, 16, '2025-04-24', 'Available', '16:00:00', '17:00:00'),
-(49, 14, '2025-04-21', 'Available', '12:00:00', '13:00:00'),
-(50, 14, '2025-04-21', 'Available', '16:00:00', '17:00:00');
+(3, 2, '2025-05-02', 'Available', '10:00:00', '11:00:00'),
+(4, 2, '2025-05-02', 'Available', '12:00:00', '13:00:00'),
+(5, 2, '2025-05-02', 'Available', '13:00:00', '14:00:00'),
+(6, 2, '2025-05-02', 'Available', '14:00:00', '15:00:00'),
+(7, 2, '2025-05-02', 'Available', '15:00:00', '16:00:00'),
+(8, 2, '2025-05-05', 'Available', '08:00:00', '09:00:00'),
+(9, 2, '2025-05-05', 'Available', '09:00:00', '10:00:00'),
+(10, 2, '2025-05-05', 'Available', '10:00:00', '11:00:00'),
+(11, 2, '2025-05-05', 'Available', '12:00:00', '13:00:00'),
+(12, 2, '2025-05-05', 'Available', '13:00:00', '14:00:00'),
+(13, 2, '2025-05-05', 'Available', '14:00:00', '15:00:00'),
+(14, 2, '2025-05-05', 'Available', '15:00:00', '16:00:00'),
+(16, 3, '2025-05-02', 'Available', '09:00:00', '10:00:00'),
+(17, 3, '2025-05-02', 'Available', '10:00:00', '11:00:00'),
+(18, 3, '2025-05-02', 'Available', '11:00:00', '12:00:00'),
+(19, 3, '2025-05-02', 'Available', '13:00:00', '14:00:00'),
+(20, 3, '2025-05-02', 'Available', '14:00:00', '15:00:00'),
+(21, 3, '2025-05-02', 'Available', '15:00:00', '16:00:00'),
+(22, 3, '2025-05-05', 'Available', '08:00:00', '09:00:00'),
+(23, 3, '2025-05-05', 'Available', '09:00:00', '10:00:00'),
+(24, 3, '2025-05-05', 'Available', '10:00:00', '11:00:00'),
+(25, 3, '2025-05-05', 'Available', '11:00:00', '12:00:00'),
+(26, 3, '2025-05-05', 'Available', '13:00:00', '14:00:00'),
+(27, 3, '2025-05-05', 'Available', '14:00:00', '15:00:00'),
+(28, 3, '2025-05-05', 'Available', '15:00:00', '16:00:00'),
+(30, 4, '2025-05-02', 'Available', '09:00:00', '10:00:00'),
+(31, 4, '2025-05-02', 'Available', '10:00:00', '11:00:00'),
+(32, 4, '2025-05-02', 'Available', '11:00:00', '12:00:00'),
+(33, 4, '2025-05-02', 'Available', '12:00:00', '13:00:00'),
+(34, 4, '2025-05-02', 'Available', '14:00:00', '15:00:00'),
+(35, 4, '2025-05-02', 'Available', '15:00:00', '16:00:00'),
+(36, 4, '2025-05-05', 'Available', '08:00:00', '09:00:00'),
+(37, 4, '2025-05-05', 'Available', '09:00:00', '10:00:00'),
+(38, 4, '2025-05-05', 'Available', '10:00:00', '11:00:00'),
+(39, 4, '2025-05-05', 'Available', '11:00:00', '12:00:00'),
+(40, 4, '2025-05-05', 'Available', '12:00:00', '13:00:00'),
+(41, 4, '2025-05-05', 'Available', '14:00:00', '15:00:00'),
+(42, 4, '2025-05-05', 'Available', '15:00:00', '16:00:00'),
+(43, 6, '2025-05-02', 'Available', '08:00:00', '09:00:00'),
+(44, 6, '2025-05-02', 'Available', '09:00:00', '10:00:00'),
+(45, 6, '2025-05-02', 'Available', '10:00:00', '11:00:00'),
+(46, 6, '2025-05-02', 'Available', '14:00:00', '15:00:00'),
+(49, 6, '2025-05-05', 'Available', '08:00:00', '09:00:00'),
+(50, 6, '2025-05-05', 'Available', '09:00:00', '10:00:00'),
+(51, 6, '2025-05-05', 'Available', '10:00:00', '11:00:00'),
+(52, 6, '2025-05-05', 'Available', '14:00:00', '15:00:00'),
+(53, 6, '2025-05-05', 'Available', '15:00:00', '16:00:00'),
+(54, 6, '2025-05-05', 'Available', '16:00:00', '17:00:00');
 
 -- --------------------------------------------------------
 
@@ -203,17 +217,16 @@ CREATE TABLE `feedback` (
 --
 
 INSERT INTO `feedback` (`FeedbackID`, `CustomerUserID`, `FeedbackDate`, `FeedbackName`, `Comments`, `Rating`) VALUES
-(2, 3, '2025-04-17 02:52:33', NULL, '(Hello) heloo', 5),
-(3, 11, '2025-04-19 03:40:40', 'jony', 'very nice,', 5),
-(4, 15, '2025-04-20 01:24:20', 'jb', 'I love u', 5);
+(1, 5, '2025-04-21 22:49:46', 'Ahmed', 'Great Services! I would highly recommend that car enthusiasts visit these guys.', 5),
+(8, 8, '2025-04-21 23:18:03', 'Haris Awan', 'The vinyl wrap and window tint installation exceeded my expectations! The wrap gave my vehicle a fresh, custom look with flawless application, while the tint significantly improved privacy and kept the interior cooler. Both services were completed with precision and attention to detail, making my car look and feel top-notch. Highly recommend!', 5);
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `Schedule`
+-- Table structure for table `schedule`
 --
 
-CREATE TABLE `Schedule` (
+CREATE TABLE `schedule` (
   `ScheduleID` int(11) NOT NULL,
   `CustomerUserID` int(11) NOT NULL,
   `OfferingID` int(11) NOT NULL,
@@ -222,30 +235,20 @@ CREATE TABLE `Schedule` (
   `TotalPrice` decimal(10,2) DEFAULT NULL,
   `AdminUserID` int(11) DEFAULT NULL,
   `VehicleID` int(11) DEFAULT NULL,
-  `Status` enum('Scheduled','In Progress','Completed') DEFAULT 'Scheduled'
+  `Status` enum('Scheduled','In Progress','Completed') DEFAULT 'Scheduled',
+  `CouponNumber` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `Schedule`
+-- Dumping data for table `schedule`
 --
 
-INSERT INTO `Schedule` (`ScheduleID`, `CustomerUserID`, `OfferingID`, `StartDate`, `EndDate`, `TotalPrice`, `AdminUserID`, `VehicleID`, `Status`) VALUES
-(1, 3, 1, '2025-03-25 10:00:00', '2025-03-25 11:00:00', 20.00, 1, NULL, 'Completed'),
-(2, 11, 1, '2025-04-19 16:03:00', '2025-04-19 17:03:00', 0.00, 1, NULL, 'Scheduled'),
-(3, 11, 1, '2025-04-22 12:00:00', '2025-04-22 13:00:00', 0.00, 1, NULL, 'Completed'),
-(8, 11, 6, '2025-04-19 08:00:00', '2025-04-19 09:00:00', 2399.00, 1, NULL, 'In Progress'),
-(7, 11, 7, '2025-04-19 10:00:00', '2025-04-19 11:00:00', 699.00, 1, NULL, 'Completed'),
-(6, 11, 7, '2025-04-21 08:00:00', '2025-04-21 09:00:00', 699.00, 1, NULL, 'Completed'),
-(5, 11, 7, '2025-04-22 16:00:00', '2025-04-22 17:00:00', 0.00, 1, NULL, 'Completed'),
-(4, 11, 8, '2025-04-22 17:00:00', '2025-04-22 18:00:00', 0.00, 1, NULL, 'Completed'),
-(12, 15, 6, '2025-04-20 08:00:00', '2025-04-20 09:00:00', 2399.00, 1, NULL, 'Completed'),
-(13, 15, 6, '2025-04-21 09:00:00', '2025-04-21 10:00:00', 2399.00, 1, NULL, 'Scheduled'),
-(14, 15, 6, '2025-04-21 10:00:00', '2025-04-21 11:00:00', 2399.00, 1, 1, 'Scheduled'),
-(15, 15, 6, '2025-04-25 12:00:00', '2025-04-25 13:00:00', 2399.00, 1, 2, 'Completed'),
-(10, 15, 7, '2025-04-19 08:00:00', '2025-04-19 09:00:00', 699.00, 1, NULL, 'Scheduled'),
-(11, 15, 7, '2025-04-19 09:00:00', '2025-04-19 10:00:00', 699.00, 1, NULL, 'In Progress'),
-(9, 15, 7, '2025-04-20 11:00:00', '2025-04-20 12:00:00', 699.00, 1, NULL, 'Completed'),
-(16, 15, 8, '2025-04-21 08:00:00', '2025-04-21 09:00:00', 1899.00, 1, 3, 'Completed');
+INSERT INTO `schedule` (`ScheduleID`, `CustomerUserID`, `OfferingID`, `StartDate`, `EndDate`, `TotalPrice`, `AdminUserID`, `VehicleID`, `Status`, `CouponNumber`) VALUES
+(4, 5, 1, '2025-05-02 16:00:00', '2025-05-02 17:00:00', 79.00, 1, 5, 'Scheduled', 1),
+(2, 5, 2, '2025-05-02 08:00:00', '2025-05-02 09:00:00', 2399.00, 1, 3, 'Completed', NULL),
+(1, 5, 3, '2025-05-02 09:00:00', '2025-05-02 10:00:00', 699.00, 1, 2, 'In Progress', NULL),
+(3, 5, 4, '2025-05-02 08:00:00', '2025-05-02 09:00:00', 1899.00, 1, 4, 'Scheduled', NULL),
+(5, 8, 1, '2025-05-02 15:00:00', '2025-05-02 16:00:00', 99.00, 1, 6, 'Scheduled', NULL);
 
 -- --------------------------------------------------------
 
@@ -266,22 +269,11 @@ CREATE TABLE `scheduleemployee` (
 --
 
 INSERT INTO `scheduleemployee` (`CustomerUserID`, `OfferingID`, `StartDate`, `EndDate`, `EmployeeUserID`) VALUES
-(3, 1, '2025-03-25 10:00:00', '2025-03-25 11:00:00', 2),
-(11, 1, '2025-04-19 16:03:00', '2025-04-19 17:03:00', 1),
-(11, 1, '2025-04-22 12:00:00', '2025-04-22 13:00:00', 2),
-(11, 6, '2025-04-19 08:00:00', '2025-04-19 09:00:00', 12),
-(11, 7, '2025-04-19 10:00:00', '2025-04-19 11:00:00', 12),
-(11, 7, '2025-04-21 08:00:00', '2025-04-21 09:00:00', 2),
-(11, 7, '2025-04-22 16:00:00', '2025-04-22 17:00:00', 2),
-(11, 8, '2025-04-22 17:00:00', '2025-04-22 18:00:00', 2),
-(15, 6, '2025-04-20 08:00:00', '2025-04-20 09:00:00', 14),
-(15, 6, '2025-04-21 09:00:00', '2025-04-21 10:00:00', 2),
-(15, 6, '2025-04-21 10:00:00', '2025-04-21 11:00:00', 2),
-(15, 6, '2025-04-25 12:00:00', '2025-04-25 13:00:00', 12),
-(15, 7, '2025-04-19 08:00:00', '2025-04-19 09:00:00', 2),
-(15, 7, '2025-04-19 09:00:00', '2025-04-19 10:00:00', 12),
-(15, 7, '2025-04-20 11:00:00', '2025-04-20 12:00:00', 14),
-(15, 8, '2025-04-21 08:00:00', '2025-04-21 09:00:00', 14);
+(5, 1, '2025-05-02 16:00:00', '2025-05-02 17:00:00', 6),
+(5, 2, '2025-05-02 08:00:00', '2025-05-02 09:00:00', 3),
+(5, 3, '2025-05-02 09:00:00', '2025-05-02 10:00:00', 2),
+(5, 4, '2025-05-02 08:00:00', '2025-05-02 09:00:00', 4),
+(8, 1, '2025-05-02 15:00:00', '2025-05-02 16:00:00', 6);
 
 -- --------------------------------------------------------
 
@@ -296,31 +288,19 @@ CREATE TABLE `serviceoffering` (
   `ImagePath` varchar(255) DEFAULT NULL,
   `MinPrice` decimal(10,2) NOT NULL,
   `MaxPrice` decimal(10,2) NOT NULL,
-  `Currency` char(3) DEFAULT 'USD'
+  `Currency` char(3) DEFAULT 'USD',
+  `Specialization` varchar(100) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `serviceoffering`
 --
 
-INSERT INTO `serviceoffering` (`OfferingID`, `OfferingName`, `ServiceDescription`, `ImagePath`, `MinPrice`, `MaxPrice`, `Currency`) VALUES
-(1, 'Window Tint', 'Window Tint', 'uploads/services/svc_6800d1db35bcc5.66099740.png', 99.00, 275.00, 'USD'),
-(6, 'PPF', 'PPF with price range', 'uploads/services/svc_6800d1af4b8823.62123162.png', 2399.00, 8999.00, 'USD'),
-(7, 'Performance Tune', 'ECU Tunes', 'uploads/services/svc_6800d43669ae58.83227407.png', 699.00, 2199.00, 'USD'),
-(8, 'Vinyl Wrap', 'Vinyl Wrap', 'uploads/services/svc_6800d46381ccb9.55061102.png', 1899.00, 3999.00, 'USD');
-
--- --------------------------------------------------------
-
---
--- Stand-in structure for view `test`
--- (See below for the actual view)
---
-CREATE TABLE `test` (
-`CouponNumber` int(11)
-,`DiscountAmount` decimal(10,2)
-,`OfferingID` int(11)
-,`AdminUserID` int(11)
-);
+INSERT INTO `serviceoffering` (`OfferingID`, `OfferingName`, `ServiceDescription`, `ImagePath`, `MinPrice`, `MaxPrice`, `Currency`, `Specialization`) VALUES
+(1, 'Window Tint', 'Our window tinting service provides enhanced privacy, UV protection, and heat reduction, giving your vehicle a sleek look while protecting the interior from sun damage.', 'uploads/services/svc_6800d1db35bcc5.66099740.png', 99.00, 275.00, 'USD', 'Window Tints'),
+(2, 'PPF', 'Our Paint Protection Film (PPF) service offers a clear, durable shield that protects your vehicle\'s paint from scratches, rock chips, and environmental damage while maintaining its original appearance.', 'uploads/services/svc_6800d1af4b8823.62123162.png', 2399.00, 8999.00, 'USD', 'PPF'),
+(3, 'Performance Tune', 'Our performance tuning service enhances your vehicle\'s power and efficiency by optimizing the ECU, delivering improved throttle response, increased horsepower, and better fuel economy.', 'uploads/services/svc_6800d43669ae58.83227407.png', 699.00, 2199.00, 'USD', 'Performance engine retune'),
+(4, 'Vinyl Wrap', 'We provide high-quality vinyl wrap installations, offering a durable, customizable solution to transform the look of your vehicle with a wide range of colors, textures, and finishes.', 'uploads/services/svc_6800d46381ccb9.55061102.png', 1899.00, 3999.00, 'USD', 'vinyl wrap');
 
 -- --------------------------------------------------------
 
@@ -344,42 +324,41 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`UserID`, `Password`, `PhoneNumber`, `FirstName`, `LastName`, `Email`, `AccessLevel`, `DateCreated`) VALUES
-(1, '$2y$10$0f/4h4QvaQtD.WtXGItn0eB9j6lhwLJr1H9bejenh00NOF/5e3eTu', '587-000-1111', 'Ahmed', 'Chaudhry', 'ahmedch45@admin.com', 'Admin', '2025-04-15 22:33:48'),
-(2, '$2y$10$U9v7FR5J4MagkN8snAFGbehZ16jbbWPGQWja3Pywh7KwddRzcUlGO', '587-111-000', 'Richard', 'Tan', 'richard.tan1@wraplab.com', 'Employee', '2025-04-15 22:33:48'),
-(3, 'customerpass', '647-555-1985', 'Charlie', 'Angus', 'charlie@example.com', 'Customer', '2025-04-15 22:33:48'),
-(9, '$2y$10$DMjvjucC.cbfBEp61MCyHuCLO1m7x2LjKL0PJKT3xbF1wu3llfecq', '8257121947', 'Farhad', 'Alizada', 'farhad@gmail.com', 'Customer', '2025-04-18 01:42:58'),
-(10, '$2y$10$2LXzcPyjqQFhSOqbSh39rugIQFh1kKMcw57XUqufCKPcRX4GApN1K', '1234567890', 'bobby', 'brar', 'bobby@gmail.com', 'Customer', '2025-04-18 02:17:36'),
-(11, '$2y$10$xjU5RnT0pLr0Gqn6N7e50eZKP7RVK35FZw.uuUw5ZLE5/iV3WU1JS', '5877034154', 'F', 'a', 'fa@gmail.com', 'Customer', '2025-04-18 18:34:03'),
-(12, '$2y$10$.V2kGUFnxIv2RE76fI/1POT6Dtg396s0eFC7OjfFyENhviFwUN2Py', NULL, 'John', 'cena', 'ohn.cena@wraplab.com', 'Employee', '2025-04-19 14:08:59'),
-(13, 'changeme123', NULL, 'Joe', 'mama', 'oe.mama@wraplab.com', 'Employee', '2025-04-19 14:11:21'),
-(14, '$2y$10$zb9eLxBEYV/qU6YIPU7YJ.KCBR6I7LKY3iz592GhgiN3NVfUyarTu', NULL, 'bill', 'burr', 'bill.burr@wraplab.com', 'Employee', '2025-04-19 15:13:17'),
-(15, '$2y$10$W.Gcsri2FAjmRlXEIQthNedV.bROazJyvShF428odW.0TN1HX4TS.', '1234567890', 'j', 'b', 'jb@gmail.com', 'Customer', '2025-04-19 15:15:51'),
-(16, '$2y$10$/7hoZHR2ivzY2OyR5j5vJOddc7bCtVOixlciIZohGXZfKI1ybdmdK', NULL, 'Jose', 'm', 'ose.m@wraplab.com', 'Employee', '2025-04-19 17:11:31');
+(1, '$2y$10$lRupnHcTOL7k94EPRudKruQwrqr33cNayWTWHUdnhZI56NnGngH7.', '587-000-1111', 'Roy', 'Li', 'roy.li@admin.com', 'Admin', '2025-04-15 22:33:48'),
+(2, '$2y$10$xlywFDZUVxPfEklBk/ewpuSCjSnCoQdk6rD2t3fg9Q2aj2hIX9gWO', '825-111-2222', 'Harris', 'Jan', 'harris.jan@wraplab.com', 'Employee', '2025-04-21 14:18:12'),
+(3, '$2y$10$p7Y2n5vwCe/Qk9nOhilfKe2zeRf8XwSI16MGiZOcA8Ph/tNtUnf/q', '403-111-2222', 'Farhad', 'Alizada', 'farhad.alizada@wraplab.com', 'Employee', '2025-04-21 14:18:49'),
+(4, '$2y$10$d9TWte1lvQq9kpA0meYhTO3xf8NeYLJ6ICMKerxSFvmMxR/S/L1wS', '587-111-2222', 'Bobby', 'Brar', 'bobby.brar@wraplab.com', 'Employee', '2025-04-21 14:19:16'),
+(5, '$2y$10$WDl9Y4G7L27kZM0D1egEsuarM22qFVKa7fmt/ey06oWaacHr0W/Hm', '5979998888', 'Ahmed', 'Chaudhry', 'ahmedch45@gmail.com', 'Customer', '2025-04-21 14:34:40'),
+(6, '$2y$10$3D9rvgSzp7oX7h6VM9GoOObkCjP6/wHhxZcj.HFhS2T9zvw6637LK', '647-111-2222', 'Ronakh', 'Shariff', 'ronakh.shariff@wraplab.com', 'Employee', '2025-04-21 15:06:19'),
+(7, '$2y$10$LMW0MkMKea/LdyvRfn4ZbO0pDF2MZd1.QvVzz1AObKrKTBsu33pLq', '604-111-2222', 'Lionel', 'Messi', 'lionel.messi@wraplab.com', 'Employee', '2025-04-21 15:12:11'),
+(8, '$2y$10$4R44kgFZ.3scUvOwvrm3mOqUbLqNBGMhqdsWb0G9ufXZU8Gutzf8i', '2850001111', 'Haris', 'Awan', 'harisawan@gmail.com', 'Customer', '2025-04-21 15:17:12');
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `Vehicle`
+-- Table structure for table `vehicle`
 --
 
-CREATE TABLE `Vehicle` (
+CREATE TABLE `vehicle` (
   `VehicleID` int(11) NOT NULL,
   `CustomerUserID` int(11) NOT NULL,
   `Make` varchar(50) NOT NULL,
   `Model` varchar(50) NOT NULL,
   `Year` int(11) NOT NULL,
-  `VINNumber` varchar(50) DEFAULT NULL,
-  `Color` varchar(30) DEFAULT NULL
+  `VINNumber` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data for table `Vehicle`
+-- Dumping data for table `vehicle`
 --
 
-INSERT INTO `Vehicle` (`VehicleID`, `CustomerUserID`, `Make`, `Model`, `Year`, `VINNumber`, `Color`) VALUES
-(1, 15, 'toyota', 'corrola', 1602, NULL, NULL),
-(2, 15, 'lamborghini', 'tractor', 1788, NULL, NULL),
-(3, 15, 'h', 'j', 1234, NULL, NULL);
+INSERT INTO `vehicle` (`VehicleID`, `CustomerUserID`, `Make`, `Model`, `Year`, `VINNumber`) VALUES
+(1, 5, 'Audi', 'A4', 2018, '4GB784383'),
+(2, 5, 'Audi', 'A4', 2018, '4GB784383'),
+(3, 5, 'Dodge', 'Challenger SRT Hellcat', 2023, '5FB589494'),
+(4, 5, 'Honda', 'Accord', 2010, '7JH684848'),
+(5, 5, 'Mercedes', 'E63', 2025, '8BF4567839'),
+(6, 8, 'Lexus', 'IS350', 2020, NULL);
 
 -- --------------------------------------------------------
 
@@ -389,15 +368,6 @@ INSERT INTO `Vehicle` (`VehicleID`, `CustomerUserID`, `Make`, `Model`, `Year`, `
 DROP TABLE IF EXISTS `d=esting`;
 
 CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `d=esting`  AS SELECT `rc`.`CONSTRAINT_NAME` AS `CONSTRAINT_NAME`, `kcu`.`COLUMN_NAME` AS `COLUMN_NAME`, `kcu`.`REFERENCED_TABLE_NAME` AS `REFERENCED_TABLE_NAME`, `kcu`.`REFERENCED_COLUMN_NAME` AS `REFERENCED_COLUMN_NAME` FROM (`information_schema`.`referential_constraints` `rc` join `information_schema`.`key_column_usage` `kcu` on(`kcu`.`CONSTRAINT_NAME` = `rc`.`CONSTRAINT_NAME` and `kcu`.`CONSTRAINT_SCHEMA` = `rc`.`CONSTRAINT_SCHEMA`)) WHERE `rc`.`CONSTRAINT_SCHEMA` = database() AND `rc`.`TABLE_NAME` = 'ScheduleEmployee' ;
-
--- --------------------------------------------------------
-
---
--- Structure for view `test`
---
-DROP TABLE IF EXISTS `test`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `test`  AS SELECT `discountcoupon`.`CouponNumber` AS `CouponNumber`, `discountcoupon`.`DiscountAmount` AS `DiscountAmount`, `discountcoupon`.`OfferingID` AS `OfferingID`, `discountcoupon`.`AdminUserID` AS `AdminUserID` FROM `discountcoupon` ;
 
 --
 -- Indexes for dumped tables
@@ -458,14 +428,16 @@ ALTER TABLE `feedback`
   ADD KEY `CustomerUserID` (`CustomerUserID`);
 
 --
--- Indexes for table `Schedule`
+-- Indexes for table `schedule`
 --
-ALTER TABLE `Schedule`
+ALTER TABLE `schedule`
   ADD PRIMARY KEY (`CustomerUserID`,`OfferingID`,`StartDate`,`EndDate`),
   ADD UNIQUE KEY `ScheduleID` (`ScheduleID`),
+  ADD UNIQUE KEY `ScheduleID_2` (`ScheduleID`),
   ADD KEY `OfferingID` (`OfferingID`),
   ADD KEY `AdminUserID` (`AdminUserID`),
-  ADD KEY `VehicleID` (`VehicleID`);
+  ADD KEY `VehicleID` (`VehicleID`),
+  ADD KEY `fk_schedule_coupon` (`CouponNumber`);
 
 --
 -- Indexes for table `scheduleemployee`
@@ -488,9 +460,9 @@ ALTER TABLE `users`
   ADD UNIQUE KEY `Email` (`Email`);
 
 --
--- Indexes for table `Vehicle`
+-- Indexes for table `vehicle`
 --
-ALTER TABLE `Vehicle`
+ALTER TABLE `vehicle`
   ADD PRIMARY KEY (`VehicleID`),
   ADD KEY `CustomerUserID` (`CustomerUserID`);
 
@@ -502,43 +474,43 @@ ALTER TABLE `Vehicle`
 -- AUTO_INCREMENT for table `discountcoupon`
 --
 ALTER TABLE `discountcoupon`
-  MODIFY `CouponNumber` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `CouponNumber` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `employeeavailability`
 --
 ALTER TABLE `employeeavailability`
-  MODIFY `AvailabilityID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=54;
+  MODIFY `AvailabilityID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=55;
 
 --
 -- AUTO_INCREMENT for table `feedback`
 --
 ALTER TABLE `feedback`
-  MODIFY `FeedbackID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `FeedbackID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
--- AUTO_INCREMENT for table `Schedule`
+-- AUTO_INCREMENT for table `schedule`
 --
-ALTER TABLE `Schedule`
-  MODIFY `ScheduleID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+ALTER TABLE `schedule`
+  MODIFY `ScheduleID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `serviceoffering`
 --
 ALTER TABLE `serviceoffering`
-  MODIFY `OfferingID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `OfferingID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `UserID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `UserID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
--- AUTO_INCREMENT for table `Vehicle`
+-- AUTO_INCREMENT for table `vehicle`
 --
-ALTER TABLE `Vehicle`
-  MODIFY `VehicleID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+ALTER TABLE `vehicle`
+  MODIFY `VehicleID` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- Constraints for dumped tables
@@ -554,7 +526,7 @@ ALTER TABLE `admin`
 -- Constraints for table `customer`
 --
 ALTER TABLE `customer`
-  ADD CONSTRAINT `customer_ibfk_1` FOREIGN KEY (`UserID`) REFERENCES `users` (`UserID`);
+  ADD CONSTRAINT `customer_ibfk_1` FOREIGN KEY (`UserID`) REFERENCES `users` (`UserID`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `customerdiscountcoupon`
@@ -564,51 +536,11 @@ ALTER TABLE `customerdiscountcoupon`
   ADD CONSTRAINT `customerdiscountcoupon_ibfk_2` FOREIGN KEY (`CustomerUserID`) REFERENCES `customer` (`UserID`);
 
 --
--- Constraints for table `dealswith`
---
-ALTER TABLE `dealswith`
-  ADD CONSTRAINT `dealswith_ibfk_1` FOREIGN KEY (`CustomerUserID`) REFERENCES `customer` (`UserID`),
-  ADD CONSTRAINT `dealswith_ibfk_2` FOREIGN KEY (`EmployeeUserID`) REFERENCES `employee` (`UserID`);
-
---
 -- Constraints for table `discountcoupon`
 --
 ALTER TABLE `discountcoupon`
   ADD CONSTRAINT `discountcoupon_ibfk_1` FOREIGN KEY (`OfferingID`) REFERENCES `serviceoffering` (`OfferingID`),
   ADD CONSTRAINT `discountcoupon_ibfk_2` FOREIGN KEY (`AdminUserID`) REFERENCES `admin` (`UserID`);
-
---
--- Constraints for table `employee`
---
-ALTER TABLE `employee`
-  ADD CONSTRAINT `employee_ibfk_1` FOREIGN KEY (`UserID`) REFERENCES `users` (`UserID`);
-
---
--- Constraints for table `employeeavailability`
---
-ALTER TABLE `employeeavailability`
-  ADD CONSTRAINT `employeeavailability_ibfk_1` FOREIGN KEY (`EmployeeUserID`) REFERENCES `employee` (`UserID`);
-
---
--- Constraints for table `feedback`
---
-ALTER TABLE `feedback`
-  ADD CONSTRAINT `feedback_ibfk_1` FOREIGN KEY (`CustomerUserID`) REFERENCES `customer` (`UserID`);
-
---
--- Constraints for table `Schedule`
---
-ALTER TABLE `Schedule`
-  ADD CONSTRAINT `fk_schedule_vehicle` FOREIGN KEY (`VehicleID`) REFERENCES `Vehicle` (`VehicleID`) ON DELETE SET NULL,
-  ADD CONSTRAINT `schedule_ibfk_1` FOREIGN KEY (`CustomerUserID`) REFERENCES `customer` (`UserID`),
-  ADD CONSTRAINT `schedule_ibfk_2` FOREIGN KEY (`OfferingID`) REFERENCES `serviceoffering` (`OfferingID`),
-  ADD CONSTRAINT `schedule_ibfk_3` FOREIGN KEY (`AdminUserID`) REFERENCES `admin` (`UserID`);
-
---
--- Constraints for table `Vehicle`
---
-ALTER TABLE `Vehicle`
-  ADD CONSTRAINT `fk_vehicle_customer` FOREIGN KEY (`CustomerUserID`) REFERENCES `customer` (`UserID`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

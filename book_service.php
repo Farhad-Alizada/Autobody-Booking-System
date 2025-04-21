@@ -1,16 +1,12 @@
 <?php
-/* ──────────────────────────────────────────────────────────────────────────
-   book_service.php  –  create a new booking for a customer
-   ────────────────────────────────────────────────────────────────────────── */
+// book_service.php  –  create a new booking for a customer
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
 session_start();
 require_once 'db_connect.php';
 
-/* --------------------------------------------------------------------------
-   1) Auth & basic input check
-   -------------------------------------------------------------------------- */
+// 1) Auth & basic input check
 if (!isset($_SESSION['user']) || $_SESSION['user']['AccessLevel'] !== 'Customer') {
     header('Location: login.html');
     exit();
@@ -25,9 +21,7 @@ foreach ($must as $f) {
     }
 }
 
-/* --------------------------------------------------------------------------
-   2) Normalise the incoming data
-   -------------------------------------------------------------------------- */
+// 2) Normalise the incoming data
 $serviceID   = (int) $_POST['service_id'];
 $date        = $_POST['service_date'];            // YYYY‑MM‑DD
 $time        = $_POST['service_time'];            // HH:MM
@@ -37,9 +31,7 @@ $endDate     = date('Y-m-d H:i:s', strtotime("$startDate +1 hour"));
 $customerID  = $_SESSION['user']['UserID'];
 $adminID     = 1;                                 // hard‑coded for now
 
-/* --------------------------------------------------------------------------
-   3) Resolve the employee (picker → DealsWith → error)
-   -------------------------------------------------------------------------- */
+// 3) Resolve the employee (picker → DealsWith → error)
 $chosenEmp = !empty($_POST['employee_id']) ? (int)$_POST['employee_id'] : null;
 
 if (!$chosenEmp) {
@@ -56,9 +48,7 @@ if (!$chosenEmp) {
     exit();
 }
 
-/* --------------------------------------------------------------------------
-   4) Make sure that employee really has that slot
-   -------------------------------------------------------------------------- */
+// 4) Make sure that employee really has that slot
 $slotStmt = $pdo->prepare("
     SELECT AvailabilityID
       FROM employeeavailability
@@ -74,9 +64,7 @@ if (!$slotID) {
     exit();
 }
 
-/* --------------------------------------------------------------------------
-   5) Stop duplicate bookings
-   -------------------------------------------------------------------------- */
+// 5) Stop duplicate bookings
 $dup = $pdo->prepare("SELECT 1
                         FROM schedule
                        WHERE CustomerUserID = ?
@@ -90,9 +78,7 @@ if ($dup->fetch()) {
     exit();
 }
 
-/* --------------------------------------------------------------------------
-   6) Pull base prices for the service
-   -------------------------------------------------------------------------- */
+// 6) Pull base prices for the service
 $row = $pdo->prepare("SELECT MinPrice, MaxPrice
                         FROM serviceoffering
                        WHERE OfferingID = ?
@@ -102,9 +88,7 @@ $svc = $row->fetch(PDO::FETCH_ASSOC);
 $minPrice = (float)$svc['MinPrice'];
 $maxPrice = (float)$svc['MaxPrice'];
 
-/* --------------------------------------------------------------------------
-   7) Validate / apply coupon   (*** NEW ***)
-   -------------------------------------------------------------------------- */
+//7) Validate / apply coupon
 $couponNum = trim($_POST['coupon_number'] ?? '');
 $discount  = 0.0;          // default: no discount
 
@@ -112,7 +96,7 @@ if ($couponNum !== '') {
     $c = $pdo->prepare("SELECT DiscountAmount
                           FROM discountcoupon
                          WHERE CouponNumber = ?
-                           AND OfferingID    = ?   -- MUST match the service
+                           AND OfferingID    = ?   
                          LIMIT 1");
     $c->execute([$couponNum, $serviceID]);
     $cpnRow = $c->fetch(PDO::FETCH_ASSOC);
@@ -127,9 +111,7 @@ if ($couponNum !== '') {
 /* price after discount – never negative */
 $finalPrice = max(0, $minPrice - $discount);
 
-/* --------------------------------------------------------------------------
-   8) Vehicle record
-   -------------------------------------------------------------------------- */
+// 8) Vehicle record
 $vehStmt = $pdo->prepare("
     INSERT INTO vehicle
       (CustomerUserID, Make, Model, Year, VINNumber)
@@ -144,9 +126,7 @@ $vehStmt->execute([
 ]);
 $vehicleID = $pdo->lastInsertId();
 
-/* --------------------------------------------------------------------------
-   9) Write everything in one transaction
-   -------------------------------------------------------------------------- */
+// 9) Write everything in one transaction
 try {
     $pdo->beginTransaction();
 

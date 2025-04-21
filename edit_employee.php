@@ -6,7 +6,7 @@ error_reporting(E_ALL);
 session_start();
 require_once 'db_connect.php';
 
-// only admins
+// only allow admins
 if (!isset($_SESSION['user']) || $_SESSION['user']['AccessLevel'] !== 'Admin') {
     header('Location: login.html');
     exit();
@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $cnt = $stmt->fetchColumn();
     $email = $base . ($cnt>0 ? $cnt : '') . '@wraplab.com';
 
-    // update Users (now including PhoneNumber)
+    // update Users 
     $updU = $pdo->prepare("
       UPDATE Users
          SET FirstName=?, LastName=?, Email=?, PhoneNumber=?

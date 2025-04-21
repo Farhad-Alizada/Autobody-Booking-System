@@ -1,5 +1,5 @@
 <?php
-// (no whitespace before <?php)
+
 require_once 'db_connect.php';
 
 try {

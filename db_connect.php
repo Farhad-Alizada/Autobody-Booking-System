@@ -3,7 +3,7 @@
 
 // Database configuration
 $host     = 'localhost';
-$dbname   = 'AutoBodyBooking';
+$dbname   = 'autobody_db';
 $username = 'root';         // Change if your MySQL username is different
 $password = '';             // Change if you have a MySQL password
 

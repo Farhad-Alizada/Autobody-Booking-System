@@ -7,9 +7,8 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['AccessLevel'] !== 'Admin') {
     exit();
 }
 
-// —————————————————————————————
+
 // 1) Fetch current admin info
-// —————————————————————————————
 $stmt = $pdo->prepare("
     SELECT FirstName, LastName, Email, PhoneNumber
     FROM users
@@ -19,9 +18,8 @@ $stmt->execute([ $_SESSION['user']['UserID'] ]);
 $admin = $stmt->fetch(PDO::FETCH_ASSOC)
        ?: ['FirstName'=>'','LastName'=>'','Email'=>'','PhoneNumber'=>''];
 
-// —————————————————————————————
+
 // 2) Fetch all services, offerings, coupons & employees
-// —————————————————————————————
 $serviceOfferings = $pdo
     ->query("SELECT OfferingID, OfferingName FROM serviceoffering ORDER BY OfferingName")
     ->fetchAll(PDO::FETCH_ASSOC);
@@ -60,9 +58,8 @@ $employees = $pdo
     ")
     ->fetchAll(PDO::FETCH_ASSOC);
 
-// —————————————————————————————
+
 // 3) Helper to pull appointments by status
-// —————————————————————————————
 function fetchAppointments($pdo, $status) {
     $sql = "
       SELECT
@@ -103,24 +100,9 @@ $sections = [
   'Completed'   => fetchAppointments($pdo,'Completed'),
 ];
 
-// —————————————————————————————
-// 4) Pull every employee grouped by specialization for reassign dropdown
-// —————————————————————————————
-// —————————————————————————————
-// 4) Pull every employee and group them by their Specialization
-// —————————————————————————————
-// REMOVE this:
-// $allEmps = $pdo
-//     ->query("
-//       SELECT U.UserID,
-//              CONCAT(U.FirstName,' ',U.LastName) AS Name,
-//              E.Specialization
-//       FROM employee E
-//       JOIN users U ON E.UserID = U.UserID
-//     ")
-//     ->fetchAll(PDO::FETCH_GROUP|PDO::FETCH_ASSOC);
 
-// ADD this instead:
+// 4) Pull every employee and group them by their Specialization
+
 $allEmps = [];
 $emps = $pdo->query("
   SELECT 
@@ -170,12 +152,12 @@ foreach ($emps as $e) {
     </ul>
   </nav>
 
-  <!-- MAIN CONTENT (30% / 70%) -->
+  <!-- MAIN CONTENT  -->
   <div class="flex-grow-1">
     <div class="container-fluid p-4">
       <div class="row">
 
-        <!-- PROFILE & CHANGE PASSWORD (30%) -->
+        <!-- PROFILE & CHANGE PASSWORD  -->
         <div class="col-lg-3 mb-5">
           <section id="my-profile">
             <h3 class="mb-3">My Profile</h3>
@@ -218,7 +200,7 @@ foreach ($emps as $e) {
           </section>
         </div>
 
-        <!-- APPOINTMENTS HISTORY (70%) -->
+        <!-- APPOINTMENTS HISTORY -->
         <div class="col-lg-9">
           <section id="appointments-history" class="mb-5">
             <h3 class="mb-4">Appointments History</h3>
@@ -585,7 +567,7 @@ foreach ($emps as $e) {
       const confirmPwd = document.getElementById('confirm_pwd').value.trim();
       if (newPwd !== confirmPwd) {
         e.preventDefault();
-        alert(`❗ Passwords do not match.`);
+        alert(`Passwords do not match❗`);
         document.getElementById('confirm_pwd').focus();
       }
     });

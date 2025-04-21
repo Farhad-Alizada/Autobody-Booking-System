@@ -9,11 +9,10 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['AccessLevel'] !== 'Employee'
 }
 
 $emp    = $_SESSION['user']['UserID'];
-$start  = $_POST['start_date'];   // e.g. "2025-04-21 12:00:00"
-$end    = $_POST['end_date'];     // e.g. "2025-04-21 13:00:00"
-$status = $_POST['new_status'];   // "Scheduled" / "In Progress" / "Completed"
+$start  = $_POST['start_date'];   
+$end    = $_POST['end_date'];     
+$status = $_POST['new_status'];   
 
-// update via the same 4‑col composite key you used in your SELECT
 $stmt = $pdo->prepare("
   UPDATE Schedule S
   JOIN scheduleemployee SE

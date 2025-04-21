@@ -1,17 +1,43 @@
 
 Field	Value
-Email	ahmedch45@admin.com
+Email	roy.li@admin.com
 Password	adminpass
 AccessLevel	Admin
 
 
 Field	Value
-Email	richardtan5789@company.com
+Email	harris.jan@wraplab.com
+Password	changeme123
+AccessLevel	Employee
+
+
+Field	Value
+Email	farhad.alizada@wraplab.com
+Password	employeepass
+AccessLevel	Employee
+
+Field	Value
+Email   bobby.brar@wraplab.com
 Password	employeepass
 AccessLevel	Employee
 
 
 Field	Value
-Email	charlie@example.com
-Password	customerpass
+Email	ronakh.shariff@wraplab.com
+Password	employeepass
+AccessLevel	Employee
+
+Field	Value
+Email	lionel.messi@wraplab.com
+Password	employeepass
+AccessLevel	Employee
+
+Field	Value
+Email	ahmedch45@gmail.com
+Password	1234567890
+AccessLevel	Customer
+
+Field	Value
+Email	haris.awan@gmail.com
+Password	1234567890
 AccessLevel	Customer

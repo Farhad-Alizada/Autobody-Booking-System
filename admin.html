@@ -8,11 +8,6 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['AccessLevel'] !== 'Admin') {
   exit();
 }
 
-// Example dummy values for now (until you plug in real data):
-$employees = [
-  ['name' => 'John', 'role' => 'Mechanic', 'jobs' => 2],
-  ['name' => 'Jane', 'role' => 'Mechanic', 'jobs' => 1],
-  ['name' => 'Alex', 'role' => 'Inspector', 'jobs' => 0],
 ];
 ?>
 <!DOCTYPE html>

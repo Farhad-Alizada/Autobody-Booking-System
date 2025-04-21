@@ -3,7 +3,7 @@
 session_start();
 require_once 'db_connect.php';
 
-// only employees
+// only allow employees
 if (!isset($_SESSION['user']) || $_SESSION['user']['AccessLevel'] !== 'Employee') {
     header('Location: login.html');
     exit();
@@ -12,9 +12,7 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['AccessLevel'] !== 'Employee'
 
 $employeeID = $_SESSION['user']['UserID'];
 
-/* ---------------------------------------------------------------------------
-   HANDLE availability deletion
-   --------------------------------------------------------------------------- */
+// HANDLE availability deletion
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['availability_id'])) {
     $pdo->prepare("
         DELETE FROM EmployeeAvailability
@@ -28,9 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['availability_id'])) {
     exit();
 }
 
-/* ---------------------------------------------------------------------------
-   HANDLE personal‑info update  (phone + address)
-   --------------------------------------------------------------------------- */
+// HANDLE personal‑info update  (phone + address)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_info'])) {
 
     $newPhone = trim($_POST['phone']);
@@ -60,9 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_info'])) {
     exit();
 }
 
-/* ---------------------------------------------------------------------------
-   FETCH profile info  (job, specialization & address)
-   --------------------------------------------------------------------------- */
+// FETCH profile info  (job, specialization & address)
 $stmt = $pdo->prepare("
     SELECT U.FirstName, U.LastName, U.Email, U.PhoneNumber,
            E.JobTitle,  E.Specialization, E.Address
@@ -77,7 +71,7 @@ $stmt->execute([$employeeID]);
 $employee = $stmt->fetch(PDO::FETCH_ASSOC) 
           ?: ['FirstName'=>'','LastName'=>'','Email'=>'','PhoneNumber'=>''];
 
-// ——— Fetch tasks assigned to this employee ———
+// Fetch tasks assigned to this employee 
 $stmt = $pdo->prepare("
     SELECT 
         S.ScheduleID,
@@ -120,7 +114,7 @@ $stmt->execute([':emp' => $employeeID]);
 $appointments = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
-// ——— Fetch upcoming availabilities ———
+// Fetch upcoming availabilities 
 $avQ = $pdo->prepare("
     SELECT AvailabilityID, AvailabilityDate, StartTime, EndTime
       FROM EmployeeAvailability
@@ -166,7 +160,7 @@ $avails = $avQ->fetchAll(PDO::FETCH_ASSOC);
     <div class="container-fluid p-4">
       <div class="row">
 
-        <!-- PROFILE & CHANGE PASSWORD (30%) -->
+        <!-- PROFILE & CHANGE PASSWORD -->
         <div class="col-lg-3 mb-5">
           <section id="my-profile">
             <h3 class="mb-3">My Profile</h3>
@@ -241,7 +235,7 @@ $avails = $avQ->fetchAll(PDO::FETCH_ASSOC);
           </section>
         </div>
 
-        <!-- TASKS, AVAILABILITY & HISTORY (70%) -->
+        <!-- TASKS, AVAILABILITY & HISTORY -->
         <div class="col-lg-9">
 
           <!-- MY TASKS -->
@@ -385,14 +379,14 @@ $avails = $avQ->fetchAll(PDO::FETCH_ASSOC);
             <?php endforeach; ?>
           </section>
 
-        </div><!-- /.col-lg-9 -->
-      </div><!-- /.row -->
-    </div><!-- /.container-fluid -->
-  </div><!-- /.flex-grow-1 -->
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // ── Password mismatch & length check ────────────────────────────────────────
+    // Password mismatch & length check 
     document.getElementById('password-form')?.addEventListener('submit', function(e) {
       const n = document.getElementById('new_pwd').value.trim();
       const c = document.getElementById('confirm_pwd').value.trim();

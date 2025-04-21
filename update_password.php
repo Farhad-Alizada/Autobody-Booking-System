@@ -35,7 +35,7 @@ if (strlen($new) < 6) {
   exit();
 }
 
-// 4) everything’s good — hash & save
+// 4) hash & save
 $hash = password_hash($new, PASSWORD_DEFAULT);
 $stmt = $pdo->prepare("
   UPDATE Users

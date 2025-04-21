@@ -2,15 +2,14 @@
 session_start();
 require_once 'db_connect.php';
 
-// only customers
+// only allow customers
 if (!isset($_SESSION['user']) || $_SESSION['user']['AccessLevel'] !== 'Customer') {
     header('Location: login.html');
     exit();
 }
 $customerID = $_SESSION['user']['UserID'];
-/* ---------------------------------------------------------------------------
-   HANDLE profile update  (email, phone, preferred contact, address)
-   --------------------------------------------------------------------------- */
+
+// HANDLE profile update  (email, phone, preferred contact, address)
    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
 
     $newEmail = trim($_POST['email']);
@@ -46,7 +45,7 @@ $customerID = $_SESSION['user']['UserID'];
     exit();
 }
 
-// ——— Fetch profile info ———
+// Fetch profile info 
 $stmt = $pdo->prepare("
   SELECT 
     U.FirstName, U.LastName, U.Email, U.PhoneNumber,
@@ -59,11 +58,11 @@ $stmt->execute([$customerID]);
 $profile = $stmt->fetch(PDO::FETCH_ASSOC)
          ?: ['FirstName'=>'','LastName'=>'','Email'=>'','PhoneNumber'=>'','PreferredContact'=>'','Address'=>''];
 
-// ——— Fetch service offerings ———
+// Fetch service offerings 
 $offerings = $pdo->query("SELECT OfferingID, OfferingName FROM ServiceOffering")
                  ->fetchAll(PDO::FETCH_ASSOC);
 
-// ——— Fetch all employees & slots for booking below ———
+// Fetch all employees & slots for booking below
 $empRows = $pdo->query("
   SELECT U.UserID,U.FirstName,U.LastName,E.Specialization
     FROM Users U
@@ -108,7 +107,7 @@ $allSlots = $allSlots->fetchAll(PDO::FETCH_ASSOC);
     <div class="container-fluid p-4">
       <div class="row">
 
-        <!-- PROFILE & CHANGE PASSWORD (30%) -->
+        <!-- PROFILE & CHANGE PASSWORD -->
         <div class="col-lg-3 mb-5">
           <section id="my-profile">
             <h3 class="mb-3">My Profile</h3>
@@ -184,7 +183,7 @@ $allSlots = $allSlots->fetchAll(PDO::FETCH_ASSOC);
           </section>
         </div>
 
-        <!-- REST OF DASHBOARD (70%) -->
+        <!-- REST OF DASHBOARD -->
         <div class="col-lg-9">
   <!-- MAIN CONTENT -->
   <div class="flex-grow-1">
@@ -343,10 +342,10 @@ const slotsByDay = rawSlots.reduce((m,s)=>(m[s.AvailabilityDate]=(m[s.Availabili
 /* ---------- date → rebuild the time list ---------- */
 dateInput.addEventListener('change', () => {
   buildTimeOptions();
-  filterEmployees();          // make list correct even before user picks a time
+  filterEmployees();          
 });
 
-/* ---------- time/service → shrink employee list ---------- */
+/* ---------- time/service  shrink employee list ---------- */
 timeSelect.addEventListener('change', filterEmployees);
 serviceSelect.addEventListener('change', filterEmployees);
 
@@ -390,7 +389,7 @@ function filterEmployees() {
   const wantedSpec = norm(serviceSelect.selectedOptions[0]?.textContent);
 
   employeeSelect.innerHTML = '';
-  employeeSelect.append(origEmpOpts[0].cloneNode(true));   // “No preference”
+  employeeSelect.append(origEmpOpts[0].cloneNode(true));  
 
   origEmpOpts.slice(1).forEach(opt => {
     const onShift = !allowedIDs.length || allowedIDs.includes(opt.value);

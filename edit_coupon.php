@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit();
 }
 
-// Otherwise it's a GET: show the edit form
+// Otherwise it's a GET, show the edit form
 $id = intval($_GET['id'] ?? 0);
 if ($id <= 0) {
   header('Location: admin.php');

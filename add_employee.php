@@ -45,7 +45,7 @@ $updU->execute([
   $first,
   $last,
   $email,
-  $digits,  // store the clean 10-digit string
+  $digits, 
   $id
 ]);
 

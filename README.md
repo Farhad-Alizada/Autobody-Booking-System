@@ -27,7 +27,7 @@ Allows customers to browse services, book appointments, and leave feedback; lets
 3. **Create the database**  
    - Open phpMyAdmin at http://localhost/phpmyadmin  
    - Create a new database named `autobody_db` (or whatever you prefer).  
-   - Import the provided `autobodybooking.sql` (or `database_setup.sql`) file from the project root to create all tables and seed data.
+   - Import the provided `autobody_db.sql` (or `database_setup.sql`) file from the project root to create all tables and seed data.
 
 4. **Configure database connection**  
    - In `db_connect.php`, update the DSN, username, and password to match your setup:
@@ -47,9 +47,10 @@ Allows customers to browse services, book appointments, and leave feedback; lets
      http://localhost/Autobody-Booking-System/index.php
      ```
    - You can now:
-     - **Sign up** or **Log in** as a **Customer**  
-     - Log in as an **Employee** via `employee.php`  
-     - Log in as an **Admin** via `admin.php`
+     - **Sign up** or **Log in** 
+     - Log in as an **Employee** 
+     - Log in as an **Admin** 
+     - Browse the website as a **User**
 
 ---
 

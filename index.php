@@ -59,11 +59,11 @@
         <a class="nav-link text-dark" href="#about">ABOUT US</a>
       </li>
       <li class="nav-item">
-        <!-- Book With Us still dark -->
+        <!-- Book With Us -->
         <a class="nav-link text-dark" href="login.html">BOOK WITH US</a>
       </li>
       <li class="nav-item">
-        <!-- LOG IN is now purple -->
+        <!-- LOG IN -->
         <a class="nav-link text-purple fw-bold" href="login.html">LOG IN</a>
       </li>
     </ul>
