@@ -1,3 +1,4 @@
+
 <?php
 session_start();
 require_once 'db_connect.php';
@@ -8,16 +9,18 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['AccessLevel'] !== 'Employee'
     exit();
 }
 
+
 $employeeID = $_SESSION['user']['UserID'];
 
-// ——— Handle availability deletion ———
+/* ---------------------------------------------------------------------------
+   HANDLE availability deletion
+   --------------------------------------------------------------------------- */
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['availability_id'])) {
-    $stmt = $pdo->prepare("
+    $pdo->prepare("
         DELETE FROM EmployeeAvailability
          WHERE AvailabilityID = :id
            AND EmployeeUserID = :empID
-    ");
-    $stmt->execute([
+    ")->execute([
         ':id'    => $_POST['availability_id'],
         ':empID' => $employeeID
     ]);
@@ -25,20 +28,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['availability_id'])) {
     exit();
 }
 
-// ——— Fetch profile info (now including job, specialization & address) ———
+/* ---------------------------------------------------------------------------
+   HANDLE personal‑info update  (phone + address)
+   --------------------------------------------------------------------------- */
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_info'])) {
+
+    $newPhone = trim($_POST['phone']);
+    $newAddr  = trim($_POST['address']);
+
+    // Update Users.PhoneNumber
+    $pdo->prepare("
+        UPDATE Users
+           SET PhoneNumber = :phone
+         WHERE UserID = :uid
+    ")->execute([
+        ':phone' => $newPhone,
+        ':uid'   => $employeeID
+    ]);
+
+    // Update Employee.Address
+    $pdo->prepare("
+        UPDATE Employee
+           SET Address = :addr
+         WHERE UserID = :uid
+    ")->execute([
+        ':addr' => $newAddr,
+        ':uid'  => $employeeID
+    ]);
+
+    header('Location: employee.php?msg=info_updated');
+    exit();
+}
+
+/* ---------------------------------------------------------------------------
+   FETCH profile info  (job, specialization & address)
+   --------------------------------------------------------------------------- */
 $stmt = $pdo->prepare("
-    SELECT 
-      U.FirstName, 
-      U.LastName, 
-      U.Email, 
-      U.PhoneNumber,
-      E.JobTitle,
-      E.Specialization,
-      E.Address
-    FROM Users U
-    JOIN Employee E ON U.UserID = E.UserID
-    WHERE U.UserID = ?
+    SELECT U.FirstName, U.LastName, U.Email, U.PhoneNumber,
+           E.JobTitle,  E.Specialization, E.Address
+      FROM Users    U
+      JOIN Employee E ON U.UserID = E.UserID
+     WHERE U.UserID = ?
 ");
+
 
 
 $stmt->execute([$employeeID]);
@@ -149,6 +181,35 @@ $avails = $avQ->fetchAll(PDO::FETCH_ASSOC);
               </div>
             </div>
 
+            <h4 class="mb-3">Edit Personal Info</h4>
+            <form action="employee.php" method="POST" class="mb-4">
+            <input type="hidden" name="update_info" value="1">
+              <div class="mb-2">
+                <label for="phone" class="form-label">Phone Number</label>
+                <input
+                  type="text"
+                  id="phone"
+                  name="phone"
+                  class="form-control"
+                  value="<?= htmlspecialchars($employee['PhoneNumber']) ?>"
+                  required
+                >
+              </div>
+              <div class="mb-2">
+                <label for="address" class="form-label">Address</label>
+                <input
+                  type="text"
+                  id="address"
+                  name="address"
+                  class="form-control"
+                  value="<?= htmlspecialchars($employee['Address']) ?>"
+                  required
+                >
+              </div>
+              <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+            </form>
+
+
             <h4 class="mb-3">Change Password</h4>
             <form id="password-form" action="update_password_employee.php" method="POST" class="row g-3">
               <div class="col-12">
@@ -215,8 +276,15 @@ $avails = $avQ->fetchAll(PDO::FETCH_ASSOC);
                       <?php endif; ?>
                       <br>
 
-                      <strong>Date:</strong>
-                        <?= date('Y-m-d H:i', strtotime($appt['StartDate'])) ?><br>
+                                              <?php
+                          $start = strtotime($appt['StartDate']);
+                          $end   = strtotime($appt['EndDate']);
+                          $same  = date('Y-m-d', $start) === date('Y-m-d', $end);
+                        ?>
+                        <strong>Date & Time:</strong>
+                        <?= date('Y-m-d H:i', $start) ?>
+                         – 
+                        <?= $same ? date('H:i', $end) : date('Y-m-d H:i', $end) ?><br>
                       <?php /* make sure there is NO stray quote or ?> here */ ?>
                       <form method="POST" action="update_status.php" class="mt-2">
                       <input type="hidden" name="start_date"   value="<?= $appt['StartDate'] ?>">
@@ -305,7 +373,12 @@ $avails = $avQ->fetchAll(PDO::FETCH_ASSOC);
                 <div class="card mb-3 p-3">
                   <strong>Customer:</strong> <?= htmlspecialchars($appt['CustomerFirstName'].' '.$appt['CustomerLastName']) ?><br>
                   <strong>Service:</strong> <?= htmlspecialchars($appt['OfferingName']) ?><br>
-                  <strong>Date:</strong> <?= date('Y-m-d H:i', strtotime($appt['StartDate'])) ?><br>
+                  <?php
+                    $start = strtotime($appt['StartDate']);
+                    $end   = strtotime($appt['EndDate']);
+                  ?>
+                  <strong>Date and Time:</strong>
+                  <?= date('Y‑m‑d H:i', $start) ?> – <?= date('H:i', $end) ?><br>
                   <span class="badge bg-success">Completed</span>
                 </div>
               <?php endif; ?>
@@ -325,13 +398,13 @@ $avails = $avQ->fetchAll(PDO::FETCH_ASSOC);
       const c = document.getElementById('confirm_pwd').value.trim();
       if (!n || !c) {
         e.preventDefault();
-        alert("❗ Both password fields are required.");
+        alert("Both password fields are required.❗");
       } else if (n.length < 6) {
         e.preventDefault();
-        alert("❗ Password must be at least 6 characters long.");
+        alert("Password must be at least 6 characters long.❗");
       } else if (n !== c) {
         e.preventDefault();
-        alert("❗ Passwords do not match.");
+        alert("Passwords do not match.❗");
         document.getElementById('confirm_pwd').focus();
       }
     });

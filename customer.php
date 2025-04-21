@@ -8,18 +8,40 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['AccessLevel'] !== 'Customer'
     exit();
 }
 $customerID = $_SESSION['user']['UserID'];
+/* ---------------------------------------------------------------------------
+   HANDLE profile update  (email, phone, preferred contact, address)
+   --------------------------------------------------------------------------- */
+   if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
 
-// ——— Handle profile update ———
-if ($_SERVER['REQUEST_METHOD']==='POST' && isset($_POST['update_profile'])) {
-    $pref = $_POST['preferred_contact'];
-    $addr = trim($_POST['address']);
-    $stmt = $pdo->prepare("
-      UPDATE Customer
-         SET PreferredContact = :pref
-           , Address          = :addr
-       WHERE UserID = :uid
-    ");
-    $stmt->execute([':pref'=>$pref,':addr'=>$addr,':uid'=>$customerID]);
+    $newEmail = trim($_POST['email']);
+    $newPhone = trim($_POST['phone']);
+    $pref     = trim($_POST['preferred_contact']);
+    $addr     = trim($_POST['address']);
+
+    /* Update Users.Email + Users.PhoneNumber */
+    $pdo->prepare("
+        UPDATE Users
+           SET Email       = :email,
+               PhoneNumber = :phone
+         WHERE UserID      = :uid
+    ")->execute([
+        ':email' => $newEmail,
+        ':phone' => $newPhone,
+        ':uid'   => $customerID
+    ]);
+
+    /* Update Customer.PreferredContact + Customer.Address */
+    $pdo->prepare("
+        UPDATE Customer
+           SET PreferredContact = :pref,
+               Address          = :addr
+         WHERE UserID = :uid
+    ")->execute([
+        ':pref' => $pref,
+        ':addr' => $addr,
+        ':uid'  => $customerID
+    ]);
+
     header('Location: customer.php?msg=profile_updated');
     exit();
 }
@@ -105,23 +127,44 @@ $allSlots = $allSlots->fetchAll(PDO::FETCH_ASSOC);
             <form action="customer.php" method="POST" class="mb-4">
               <input type="hidden" name="update_profile" value="1">
               <div class="mb-2">
-                <label class="form-label">Preferred Contact</label>
-                <select name="preferred_contact" class="form-select" required>
-                  <option <?= $profile['PreferredContact']==='Email' ? 'selected':''?>>Email</option>
-                  <option <?= $profile['PreferredContact']==='Phone' ? 'selected':''?>>Phone</option>
-                </select>
-              </div>
-              <div class="mb-2">
-                <label class="form-label">Address</label>
-                <input
-                  type="text"
-                  name="address"
-                  class="form-control"
-                  value="<?=htmlspecialchars($profile['Address'])?>"
-                  required>
-              </div>
-              <button class="btn btn-primary btn-sm">Save</button>
-            </form>
+                    <label class="form-label">Email</label>
+                    <input type="email"
+                          name="email"
+                          value="<?= htmlspecialchars($profile['Email']) ?>"
+                          class="form-control"
+                          required>
+                  </div>
+
+                  <div class="mb-2">
+                    <label class="form-label">Phone Number</label>
+                    <input type="tel"
+                          name="phone"
+                          pattern="[0-9+\-\s]{7,15}"
+                          value="<?= htmlspecialchars($profile['PhoneNumber']) ?>"
+                          class="form-control"
+                          required>
+                  </div>
+
+                  <div class="mb-2">
+                    <label class="form-label">Preferred Contact</label>
+                    <select name="preferred_contact" class="form-select" required>
+                      <option <?= $profile['PreferredContact']==='Email' ? 'selected':''?>>Email</option>
+                      <option <?= $profile['PreferredContact']==='Phone' ? 'selected':''?>>Phone</option>
+                    </select>
+                  </div>
+
+                  <div class="mb-2">
+                    <label class="form-label">Address</label>
+                    <input type="text"
+                          name="address"
+                          value="<?= htmlspecialchars($profile['Address']) ?>"
+                          class="form-control"
+                          required>
+                  </div>
+
+                  <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                  </form>   <!-- ← close the Edit‑Personal‑Info form here -->
+
 
             <!-- change password -->
             <h4 class="mb-3">Change Password</h4>
@@ -197,16 +240,17 @@ $allSlots = $allSlots->fetchAll(PDO::FETCH_ASSOC);
                 <option value="">Pick a date first…</option>
               </select>
             </div>
+
             <div class="col-md-4">
-              <label for="employeeSelect" class="form-label">Preferred Employee</label>
+              <label for="employeeSelect" class="form-label">Employee</label>
               <select id="employeeSelect" name="employee_id" class="form-select">
-              <option value="">No preference</option>
-  <?php foreach ($empRows as $e): ?>
-    <option
-      value="<?= $e['UserID'] ?>"
-      data-specialization="<?= htmlspecialchars($e['Specialization']) ?>"
-    >
-      <?= htmlspecialchars($e['FirstName'].' '.$e['LastName']) ?>
+              <option value="">Choose an Employee</option>
+                <?php foreach ($empRows as $e): ?>
+                  <option
+                    value="<?= $e['UserID'] ?>"
+                    data-specialization="<?= htmlspecialchars($e['Specialization']) ?>"
+                      >
+                    <?= htmlspecialchars($e['FirstName'].' '.$e['LastName']) ?>
                   </option>
                 <?php endforeach; ?>
               </select>
@@ -268,6 +312,7 @@ $allSlots = $allSlots->fetchAll(PDO::FETCH_ASSOC);
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
+
   <!-- Appointments Loader -->
   <script>
     window.addEventListener('DOMContentLoaded', () => {
@@ -276,103 +321,103 @@ $allSlots = $allSlots->fetchAll(PDO::FETCH_ASSOC);
         .then(html => document.getElementById('appointments-container').innerHTML = html);
     });
   </script>
-  <!-- Availability & Employee Filter -->
-  <script>
-    const rawSlots     = <?= json_encode($allSlots) ?>;
-    const slotsByDate  = rawSlots.reduce((a,s) => {
-      (a[s.AvailabilityDate] = a[s.AvailabilityDate]||[]).push(s);
-      return a;
-    }, {});
-    const dateInput    = document.getElementById('serviceDate');
-    const timeSelect   = document.getElementById('timeSelect');
-    const employeeSel  = document.getElementById('employeeSelect');
 
-    // store original employee options
-    const origEmps = Array.from(employeeSel.options);
+  <!-- Availability + Specialization + Shift‑filter  (REPLACEMENT) -->
+<script>
+/* ---------- cached DOM nodes ---------- */
+const serviceSelect  = document.getElementById('serviceSelect');
+const dateInput      = document.getElementById('serviceDate');
+const timeSelect     = document.getElementById('timeSelect');
+const employeeSelect = document.getElementById('employeeSelect');
 
-    dateInput.addEventListener('change', () => {
-      const day = dateInput.value;
-      const slots = slotsByDate[day]||[];
-      timeSelect.innerHTML = '';
-      if (!slots.length) {
-        timeSelect.disabled = true;
-        timeSelect.innerHTML = '<option>No slots</option>';
-        return;
-      }
-      timeSelect.disabled = false;
-      const seen = new Set();
-      slots.forEach(s => {
-        const t0 = s.StartTime.slice(0,5);
-        const t1 = s.EndTime.slice(0,5);
-        const label = `${t0} – ${t1}`;
-        if (!seen.has(label)) {
-          seen.add(label);
-          const opt = document.createElement('option');
-          const emps = slots
-            .filter(x => x.StartTime.slice(0,5)===t0)
-            .map(x => x.EmployeeUserID);
-          opt.value = t0;
-          opt.text  = label;
-          opt.dataset.emps = emps.join(',');
-          timeSelect.append(opt);
-        }
-      });
-      filterEmployees();
-    });
+/* Keep the pristine <option> list so we can rebuild it */
+const origEmpOpts = Array.from(employeeSelect.options);
 
-    timeSelect.addEventListener('change', filterEmployees);
+/* Normalise strings before comparing */
+const norm = s => (s ?? '').trim().toLowerCase();
 
-    function filterEmployees() {
-      const chosen = timeSelect.selectedOptions[0]?.dataset.emps?.split(',')||[];
-      employeeSel.innerHTML = '';
-      // always include the no-pref option
-      employeeSel.append(origEmps[0].cloneNode(true));
-      origEmps.slice(1).forEach(opt => {
-        if (chosen.length === 0 || chosen.includes(opt.value)) {
-          employeeSel.append(opt.cloneNode(true));
-        }
-      });
-    }
-  </script>
+/* ---------- slot data coming from PHP ---------- */
+const rawSlots   = <?= json_encode($allSlots) ?>;
+const slotsByDay = rawSlots.reduce((m,s)=>(m[s.AvailabilityDate]=(m[s.AvailabilityDate]||[]).concat(s),m),{});
 
-  <!-- Specialization Filter -->
-  <script>
-    const serviceSelect  = document.getElementById('serviceSelect');
-    const employeeSelect = document.getElementById('employeeSelect');
-    const origEmpOpts    = Array.from(employeeSelect.options);
+/* ---------- date → rebuild the time list ---------- */
+dateInput.addEventListener('change', () => {
+  buildTimeOptions();
+  filterEmployees();          // make list correct even before user picks a time
+});
 
-    serviceSelect.addEventListener('change', () => {
-      const chosenService = serviceSelect.selectedOptions[0]?.textContent;
-      employeeSelect.innerHTML = '';
-      // always re‑add “No preference”
-      employeeSelect.append(origEmpOpts[0].cloneNode(true));
-      // then re‑add only those matching the chosen service
-      origEmpOpts.slice(1).forEach(opt => {
-        if (!chosenService || opt.dataset.specialization === chosenService) {
-          employeeSelect.append(opt.cloneNode(true));
-        }
-      });
-    });
+/* ---------- time/service → shrink employee list ---------- */
+timeSelect.addEventListener('change', filterEmployees);
+serviceSelect.addEventListener('change', filterEmployees);
 
-    <!-- JS for password form -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-  // ── Password mismatch & length check ────────────────────────────────────────
-    document.getElementById('password-form')?.addEventListener('submit', function(e) {
-      const n = document.getElementById('new_pwd').value.trim();
-      const c = document.getElementById('confirm_pwd').value.trim();
-      if (!n || !c) {
-        e.preventDefault();
-        alert("❗ Both password fields are required.");
-      } else if (n.length < 6) {
-        e.preventDefault();
-        alert("❗ Password must be at least 6 characters long.");
-      } else if (n !== c) {
-        e.preventDefault();
-        alert("❗ Passwords do not match.");
-        document.getElementById('confirm_pwd').focus();
-      }
-    });
-  </script>
+/* ---------- helpers ---------- */
+function buildTimeOptions() {
+  const slots = slotsByDay[dateInput.value] || [];
+  timeSelect.innerHTML = '';
+  if (!slots.length) {
+    timeSelect.disabled = true;
+    timeSelect.innerHTML = '<option>No slots</option>';
+    return;
+  }
+  timeSelect.disabled = false;
+
+  const added = new Set();
+  slots.forEach(s => {
+    const start  = s.StartTime.slice(0,5);
+    const end    = s.EndTime.slice(0,5);
+    const label  = `${start} – ${end}`;
+    if (added.has(label)) return;
+    added.add(label);
+
+    const opt = document.createElement('option');
+    opt.value       = start;
+    opt.text        = label;
+    opt.dataset.emps = slots
+        .filter(x => x.StartTime.slice(0,5) === start)
+        .map(x => x.EmployeeUserID)
+        .join(',');
+    timeSelect.append(opt);
+  });
+}
+
+function filterEmployees() {
+  /* Who’s on shift for the chosen slot? */
+  const allowedIDs = (timeSelect.selectedOptions[0]?.dataset.emps || '')
+                     .split(',')
+                     .filter(Boolean);
+
+  /* What specialization does the service need? */
+  const wantedSpec = norm(serviceSelect.selectedOptions[0]?.textContent);
+
+  employeeSelect.innerHTML = '';
+  employeeSelect.append(origEmpOpts[0].cloneNode(true));   // “No preference”
+
+  origEmpOpts.slice(1).forEach(opt => {
+    const onShift = !allowedIDs.length || allowedIDs.includes(opt.value);
+    const specOK  = !wantedSpec || norm(opt.dataset.specialization) === wantedSpec;
+    if (onShift && specOK) employeeSelect.append(opt.cloneNode(true));
+  });
+}
+</script>
+<!-- end replacement -->
+  <!-- Password mismatch & length check -->
+<script>
+document.getElementById('password-form')?.addEventListener('submit', function (e) {
+  const n = document.getElementById('new_pwd').value.trim();
+  const c = document.getElementById('confirm_pwd').value.trim();
+
+  if (!n || !c) {
+    e.preventDefault();
+    alert("Both password fields are required.❗");
+  } else if (n.length < 6) {
+    e.preventDefault();
+    alert("Password must be at least 6 characters long.❗");
+  } else if (n !== c) {
+    e.preventDefault();
+    alert("Passwords do not match.❗");
+    document.getElementById('confirm_pwd').focus();
+  }
+});
+</script>
 </body>
 </html>

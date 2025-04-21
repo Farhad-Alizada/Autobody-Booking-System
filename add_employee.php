@@ -29,7 +29,7 @@ if (!$phoneRaw) {
 $digits = preg_replace('/\D+/', '', $phoneRaw);
 
 if (strlen($digits) !== 10) {
-  die("Phone number must contain exactly 10 digits (e.g. 825-111-2222 or 8251112222).");
+  die("Phone number must contain exactly 10 digits (e.g. xxx-xxx-xxxx or xxxxxxxxxx).");
 }
 
 // and later, when you update:

@@ -310,6 +310,7 @@ foreach ($emps as $e) {
                 <label class="form-label">Service Name</label>
                 <input name="serviceName" class="form-control" required>
               </div>
+            
               <div class="col-md-5">
                 <label class="form-label">Description</label>
                 <input name="serviceDesc" class="form-control" required>
@@ -594,7 +595,7 @@ foreach ($emps as $e) {
       const max = parseFloat(document.getElementById('maxPrice').value) || 0;
       if (min > max) {
         e.preventDefault();
-        alert(`❗ Minimum price $${min.toFixed(2)} cannot exceed maximum price $${max.toFixed(2)}.`);
+        alert(`Minimum price $${min.toFixed(2)} cannot exceed maximum price $${max.toFixed(2)}.❗`);
         document.getElementById('minPrice').focus();
       }
     });
@@ -606,10 +607,22 @@ foreach ($emps as $e) {
       const max = parseFloat(sel.selectedOptions[0].dataset.max) || 0;
       if (amt > max) {
         e.preventDefault();
-        alert(`❗ Discount ($${amt.toFixed(2)}) cannot exceed service max price of $${max.toFixed(2)}.`);
+        alert(`Discount ($${amt.toFixed(2)}) cannot exceed service max price of $${max.toFixed(2)}.❗`);
         document.getElementById('discountAmt').focus();
       }
     });
-  </script>
+ 
+    /* ── phone number must be 10 digits ─────────────────────────── */
+  document.querySelector('form[action="add_employee.php"]')
+          .addEventListener('submit', function (e) {
+    const raw    = this.phone_number.value.trim();          // whatever user typed
+    const digits = raw.replace(/\D/g, '');                  // strip non‑digits
+    if (digits.length !== 10) {
+      e.preventDefault();                                   // cancel submit
+      alert('Phone number must contain exactly 10 digits (e.g. 825‑111‑2222 or 8251112222)❗');
+      this.phone_number.focus();
+    }
+  });
+</script>
 </body>
 </html>

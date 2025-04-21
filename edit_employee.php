@@ -1,4 +1,8 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 session_start();
 require_once 'db_connect.php';
 
@@ -34,23 +38,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   if (strlen($digits) !== 10) {
       die("Phone number must contain exactly 10 digits (e.g. 825-111-2222 or 8251112222).");
   }
-  
-  // and later, when you update:
-  $updU = $pdo->prepare("
-    UPDATE Users
-       SET FirstName  = ?,
-           LastName   = ?,
-           Email      = ?,
-           PhoneNumber= ?
-     WHERE UserID    = ?
-  ");
-  $updU->execute([
-      $first,
-      $last,
-      $email,
-      $digits,  // store the clean 10-digit string
-      $id
-  ]);
 
     // regenerate email
     $base = strtolower($first) .'.'. strtolower($last);
@@ -69,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $first,
         $last,
         $email,
-        $phoneRaw,
+        $digits,
         $id
     ]);
 
@@ -110,6 +97,12 @@ if (!$e) {
     header('Location: admin.php');
     exit();
 }
+$offerings = $pdo->query("
+    SELECT OfferingID, OfferingName
+      FROM ServiceOffering
+     ORDER BY OfferingName
+")->fetchAll(PDO::FETCH_ASSOC);
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -150,10 +143,18 @@ if (!$e) {
              value="<?=htmlspecialchars($e['JobTitle'])?>">
     </div>
     <div class="col-md-6">
-      <label class="form-label">Specialization</label>
-      <input name="specialization" class="form-control"
-             value="<?=htmlspecialchars($e['Specialization'])?>">
-    </div>
+  <label for="specSelect" class="form-label">Specialization</label>
+  <select id="specSelect" name="specialization" class="form-select" required>
+    <option value="">Choose one...</option>
+    <?php foreach ($offerings as $o): ?>
+      <option
+        value="<?= htmlspecialchars($o['OfferingName']) ?>"
+        <?= $e['Specialization'] === $o['OfferingName'] ? 'selected' : '' ?>>
+        <?= htmlspecialchars($o['OfferingName']) ?>
+      </option>
+    <?php endforeach; ?>
+  </select>
+</div>
 
     <div class="col-12 text-end">
       <a href="admin.php" class="btn btn-outline-secondary">Cancel</a>

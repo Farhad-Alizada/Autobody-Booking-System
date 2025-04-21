@@ -1,55 +1,54 @@
 <?php
-// turn on full errors
+/* ──────────────────────────────────────────────────────────────────────────
+   book_service.php  –  create a new booking for a customer
+   ────────────────────────────────────────────────────────────────────────── */
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
 session_start();
 require_once 'db_connect.php';
 
-
-// 1) Auth check
+/* --------------------------------------------------------------------------
+   1) Auth & basic input check
+   -------------------------------------------------------------------------- */
 if (!isset($_SESSION['user']) || $_SESSION['user']['AccessLevel'] !== 'Customer') {
     header('Location: login.html');
     exit();
 }
 
-// 2) Validate inputs (including vehicle fields)
-if (
-    empty($_POST['service_id']) ||
-    empty($_POST['service_date']) ||
-    empty($_POST['service_time']) ||
-    empty($_POST['vehicle_make']) ||
-    empty($_POST['vehicle_model']) ||
-    empty($_POST['vehicle_year'])
-) {
-    header('Location: customer.php?error=invalid_input');
-    exit();
+$must = ['service_id','service_date','service_time',
+         'vehicle_make','vehicle_model','vehicle_year'];
+foreach ($must as $f) {
+    if (empty($_POST[$f])) {
+        header('Location: customer.php?error=invalid_input');
+        exit();
+    }
 }
 
-$serviceID  = (int) $_POST['service_id'];
-$date       = $_POST['service_date'];        // YYYY-MM-DD
-$time       = $_POST['service_time'];        // HH:MM
-$startDate  = "$date $time:00";
-$endDate    = date('Y-m-d H:i:s', strtotime("$startDate +1 hour"));
+/* --------------------------------------------------------------------------
+   2) Normalise the incoming data
+   -------------------------------------------------------------------------- */
+$serviceID   = (int) $_POST['service_id'];
+$date        = $_POST['service_date'];            // YYYY‑MM‑DD
+$time        = $_POST['service_time'];            // HH:MM
+$startDate   = "$date $time:00";
+$endDate     = date('Y-m-d H:i:s', strtotime("$startDate +1 hour"));
 
-$customerID = $_SESSION['user']['UserID'];
-$adminID    = 1;
+$customerID  = $_SESSION['user']['UserID'];
+$adminID     = 1;                                 // hard‑coded for now
 
-// 3) Determine which employee to use (preference or DealsWith)
-$chosenEmp = !empty($_POST['employee_id'])
-    ? (int) $_POST['employee_id']
-    : null;
+/* --------------------------------------------------------------------------
+   3) Resolve the employee (picker → DealsWith → error)
+   -------------------------------------------------------------------------- */
+$chosenEmp = !empty($_POST['employee_id']) ? (int)$_POST['employee_id'] : null;
 
 if (!$chosenEmp) {
-    $r = $pdo->prepare("
-        SELECT EmployeeUserID
-          FROM DealsWith
-         WHERE CustomerUserID = :cust
-         LIMIT 1
-    ");
-    $r->execute([':cust' => $customerID]);
-    $row = $r->fetch(PDO::FETCH_ASSOC);
-    $chosenEmp = $row['EmployeeUserID'] ?? null;
+    $r = $pdo->prepare("SELECT EmployeeUserID
+                          FROM dealswith
+                         WHERE CustomerUserID = ?
+                         LIMIT 1");
+    $r->execute([$customerID]);
+    $chosenEmp = $r->fetchColumn();
 }
 
 if (!$chosenEmp) {
@@ -57,123 +56,109 @@ if (!$chosenEmp) {
     exit();
 }
 
-// 4) Check that that employee actually has that slot free
-$avail = $pdo->prepare("
+/* --------------------------------------------------------------------------
+   4) Make sure that employee really has that slot
+   -------------------------------------------------------------------------- */
+$slotStmt = $pdo->prepare("
     SELECT AvailabilityID
-      FROM EmployeeAvailability
-     WHERE EmployeeUserID  = :eid
-       AND AvailabilityDate = :date
-       AND TIME(StartTime)  = :time
-     LIMIT 1
-");
-$avail->execute([
-    ':eid'  => $chosenEmp,
-    ':date' => $date,
-    ':time' => $time . ':00'
-]);
-$slot = $avail->fetch(PDO::FETCH_ASSOC);
-if (!$slot) {
+      FROM employeeavailability
+     WHERE EmployeeUserID  = ?
+       AND AvailabilityDate = ?
+       AND TIME(StartTime)  = ?
+     LIMIT 1");
+$slotStmt->execute([$chosenEmp, $date, "$time:00"]);
+$slotID = $slotStmt->fetchColumn();
+
+if (!$slotID) {
     header('Location: customer.php?error=no_availability');
     exit();
 }
-$slotID = $slot['AvailabilityID'];
 
-// 5) Prevent duplicate bookings
-$dup = $pdo->prepare("
-    SELECT 1
-      FROM Schedule
-     WHERE CustomerUserID = :cust
-       AND OfferingID      = :off
-       AND StartDate       = :start
-       AND EndDate         = :end
-     LIMIT 1
-");
-$dup->execute([
-    ':cust'  => $customerID,
-    ':off'   => $serviceID,
-    ':start' => $startDate,
-    ':end'   => $endDate,
-]);
+/* --------------------------------------------------------------------------
+   5) Stop duplicate bookings
+   -------------------------------------------------------------------------- */
+$dup = $pdo->prepare("SELECT 1
+                        FROM schedule
+                       WHERE CustomerUserID = ?
+                         AND OfferingID      = ?
+                         AND StartDate       = ?
+                         AND EndDate         = ?
+                       LIMIT 1");
+$dup->execute([$customerID, $serviceID, $startDate, $endDate]);
 if ($dup->fetch()) {
     header('Location: customer.php?error=duplicate_booking');
     exit();
 }
 
-// 6) Fetch the service’s base price
-$priceStmt = $pdo->prepare("
-    SELECT MinPrice, MaxPrice
-      FROM ServiceOffering
-     WHERE OfferingID = :off
-     LIMIT 1
-");
-$priceStmt->execute([':off' => $serviceID]);
-$row = $priceStmt->fetch(PDO::FETCH_ASSOC);
-$minPrice = (float) $row['MinPrice'];
-$maxPrice = (float) $row['MaxPrice'];
+/* --------------------------------------------------------------------------
+   6) Pull base prices for the service
+   -------------------------------------------------------------------------- */
+$row = $pdo->prepare("SELECT MinPrice, MaxPrice
+                        FROM serviceoffering
+                       WHERE OfferingID = ?
+                       LIMIT 1");
+$row->execute([$serviceID]);
+$svc = $row->fetch(PDO::FETCH_ASSOC);
+$minPrice = (float)$svc['MinPrice'];
+$maxPrice = (float)$svc['MaxPrice'];
 
-$discountedMin = max(0, $minPrice - $discount);
-$finalPriceDisplay = "$" . number_format($discountedMin, 2) . " – $" . number_format($maxPrice, 2);
+/* --------------------------------------------------------------------------
+   7) Validate / apply coupon   (*** NEW ***)
+   -------------------------------------------------------------------------- */
+$couponNum = trim($_POST['coupon_number'] ?? '');
+$discount  = 0.0;          // default: no discount
 
+if ($couponNum !== '') {
+    $c = $pdo->prepare("SELECT DiscountAmount
+                          FROM discountcoupon
+                         WHERE CouponNumber = ?
+                           AND OfferingID    = ?   -- MUST match the service
+                         LIMIT 1");
+    $c->execute([$couponNum, $serviceID]);
+    $cpnRow = $c->fetch(PDO::FETCH_ASSOC);
 
-
-// … after you fetch $price …
-$couponNum = !empty($_POST['coupon_number'])
-    ? (int) $_POST['coupon_number']
-    : null;
-
-// look up the discount amount
-$discount = 0.0;
-if ($couponNum) {
-    $c = $pdo->prepare("
-      SELECT DiscountAmount
-        FROM discountcoupon
-       WHERE CouponNumber = ?
-       LIMIT 1
-    ");
-    $c->execute([$couponNum]);
-    if ($r = $c->fetch(PDO::FETCH_ASSOC)) {
-        $discount = (float)$r['DiscountAmount'];
+    if (!$cpnRow) {        // coupon is not valid for this service
+        header('Location: customer.php?error=bad_coupon');
+        exit();
     }
+    $discount = (float)$cpnRow['DiscountAmount'];
 }
 
-// subtract (but never go below zero)
-$finalPrice = max(0, $MinPrice - $discount);
+/* price after discount – never negative */
+$finalPrice = max(0, $minPrice - $discount);
 
-// 7) Pull the vehicle inputs
-$vehicleMake  = $_POST['vehicle_make'];
-$vehicleModel = $_POST['vehicle_model'];
-$vehicleYear  = (int) $_POST['vehicle_year'];
-$vinNumber    = !empty($_POST['vin_number']) ? $_POST['vin_number'] : null;
+/* --------------------------------------------------------------------------
+   8) Vehicle record
+   -------------------------------------------------------------------------- */
+$vehStmt = $pdo->prepare("
+    INSERT INTO vehicle
+      (CustomerUserID, Make, Model, Year, VINNumber)
+    VALUES
+      (:cust, :make, :model, :year, :vin)");
+$vehStmt->execute([
+    ':cust'  => $customerID,
+    ':make'  => $_POST['vehicle_make'],
+    ':model' => $_POST['vehicle_model'],
+    ':year'  => (int)$_POST['vehicle_year'],
+    ':vin'   => $_POST['vin_number'] ?: null
+]);
+$vehicleID = $pdo->lastInsertId();
 
+/* --------------------------------------------------------------------------
+   9) Write everything in one transaction
+   -------------------------------------------------------------------------- */
 try {
     $pdo->beginTransaction();
 
-    // 8) Insert the new Vehicle row
-    $veh = $pdo->prepare("
-        INSERT INTO Vehicle
-          (CustomerUserID, Make, Model, Year, VINNumber)
-        VALUES
-          (:cust, :make, :model, :year, :vin)
-    ");
-    $veh->execute([
-        ':cust'  => $customerID,
-        ':make'  => $vehicleMake,
-        ':model' => $vehicleModel,
-        ':year'  => $vehicleYear,
-        ':vin'   => $vinNumber
-    ]);
-    $vehicleID = $pdo->lastInsertId();
-
-    // 9) Insert into Schedule (including that VehicleID)
-    $ins1 = $pdo->prepare("
-        INSERT INTO Schedule
+    /* schedule */
+    $insSch = $pdo->prepare("
+        INSERT INTO schedule
           (CustomerUserID, OfferingID, StartDate, EndDate,
            TotalPrice, AdminUserID, VehicleID, Status, CouponNumber)
         VALUES
           (:cust, :off, :start, :end,
-           :price, :admin, :veh, 'Scheduled', :coupon)
-    ");
-    $ins1->execute([
+           :price, :admin, :veh, 'Scheduled', :coupon)");
+    $insSch->execute([
         ':cust'   => $customerID,
         ':off'    => $serviceID,
         ':start'  => $startDate,
@@ -181,17 +166,16 @@ try {
         ':price'  => $finalPrice,
         ':admin'  => $adminID,
         ':veh'    => $vehicleID,
-        ':coupon' => $couponNum
+        ':coupon' => $couponNum ?: null
     ]);
 
-    // 10) Insert into ScheduleEmployee
-    $ins2 = $pdo->prepare("
-        INSERT INTO ScheduleEmployee
+    /* linking table */
+    $insSE = $pdo->prepare("
+        INSERT INTO scheduleemployee
           (CustomerUserID, OfferingID, StartDate, EndDate, EmployeeUserID)
         VALUES
-          (:cust, :off, :start, :end, :emp)
-    ");
-    $ins2->execute([
+          (:cust, :off, :start, :end, :emp)");
+    $insSE->execute([
         ':cust'  => $customerID,
         ':off'   => $serviceID,
         ':start' => $startDate,
@@ -199,12 +183,9 @@ try {
         ':emp'   => $chosenEmp
     ]);
 
-    // 11) Remove that hour from availability
-    $del = $pdo->prepare("
-        DELETE FROM EmployeeAvailability 
-         WHERE AvailabilityID = :slot
-    ");
-    $del->execute([':slot' => $slotID]);
+    /* remove that availability slot */
+    $pdo->prepare("DELETE FROM employeeavailability WHERE AvailabilityID = ?")
+        ->execute([$slotID]);
 
     $pdo->commit();
     header('Location: customer.php?message=booking_success');
@@ -215,4 +196,3 @@ try {
     echo "Database error: " . htmlspecialchars($e->getMessage());
     exit();
 }
-?>

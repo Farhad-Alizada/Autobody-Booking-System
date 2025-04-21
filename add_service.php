@@ -9,6 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 // 1) Gather & validate inputs
 $name = trim($_POST['serviceName'] ?? '');
 $desc = trim($_POST['serviceDesc'] ?? '');
+$spec = trim($_POST['specialization'] ?? '');
 $min  = floatval($_POST['minPrice']   ?? -1);
 $max  = floatval($_POST['maxPrice']   ?? -1);
 
@@ -48,16 +49,17 @@ if (
 // 3) Insert into database
 $stmt = $pdo->prepare("
     INSERT INTO ServiceOffering
-      (OfferingName, ServiceDescription, MinPrice, MaxPrice, ImagePath)
+      (OfferingName, ServiceDescription, MinPrice, MaxPrice, ImagePath, Specialization)
     VALUES
-      (:name, :desc, :min, :max, :img)
+      (:name, :desc, :min, :max, :img, :spec)
 ");
 $stmt->execute([
     ':name' => $name,
     ':desc' => $desc,
     ':min'  => $min,
     ':max'  => $max,
-    ':img'  => $imgPath
+    ':img'  => $imgPath,
+    ':spec' => $spec
 ]);
 
 // 4) Redirect back to admin
