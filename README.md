@@ -80,7 +80,7 @@ Allows customers to browse services, book appointments, and leave feedback; lets
   - `main.js`    – interactivity (slot filtering, appointment loader)
 
 - **Database schema**  
-  - `autobodybooking.sql` (or `database_setup.sql`)  
+  - `autobody_db.sql`  
 
 ---
 
