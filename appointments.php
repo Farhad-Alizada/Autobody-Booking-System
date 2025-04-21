@@ -12,14 +12,22 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['AccessLevel'] !== 'Customer'
 $customerID = $_SESSION['user']['UserID'];
 
 try {
-    // 2) Fetch appointments + all the related info
+    // 2) Fetch appointments + price‐range + coupon
     $stmt = $pdo->prepare("
         SELECT
             S.ScheduleID,
             SO.OfferingName,
             SO.ServiceDescription,
             SO.Currency,
-            COALESCE(S.TotalPrice, SO.MinPrice) AS Price,
+
+            -- pull both Min and Max
+            SO.MinPrice   AS MinPrice,
+            SO.MaxPrice   AS MaxPrice,
+
+            -- coupon info
+            DC.DiscountAmount,
+            S.CouponNumber,
+
             S.StartDate,
             S.EndDate,
             S.Status,
@@ -27,12 +35,17 @@ try {
             V.Model,
             V.Year,
             V.VINNumber,
-            CONCAT(Uemp.FirstName, ' ', Uemp.LastName) AS EmployeeName,
+            CONCAT(Uemp.FirstName,' ',Uemp.LastName) AS EmployeeName,
             E.JobTitle,
             E.Specialization
         FROM Schedule S
         JOIN ServiceOffering SO 
           ON S.OfferingID = SO.OfferingID
+
+        -- grab the coupon discount (if any)
+        LEFT JOIN discountcoupon DC 
+          ON S.CouponNumber = DC.CouponNumber
+
         LEFT JOIN Vehicle V 
           ON S.VehicleID = V.VehicleID
         LEFT JOIN ScheduleEmployee SE 
@@ -50,24 +63,31 @@ try {
     $stmt->execute([':custID' => $customerID]);
     $appointments = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // 3) If none, placeholder
     if (empty($appointments)) {
         echo "<p class='text-muted'>You have no appointments yet.</p>";
         exit();
     }
 
-    // 4) Render each appointment + modal
+    // 3) Render each appointment + modal
     foreach ($appointments as $appt) {
-        $id         = (int)$appt['ScheduleID'];
-        $name       = htmlspecialchars($appt['OfferingName']);
-        $desc       = nl2br(htmlspecialchars($appt['ServiceDescription']));
-        $currency   = htmlspecialchars($appt['Currency']);
-        $price      = number_format($appt['Price'], 2);
-        $startDT    = strtotime($appt['StartDate']);
-        $date       = date('Y-m-d', $startDT);
-        $t0         = date('g:ia', $startDT);
-        $t1         = date('g:ia', strtotime($appt['EndDate']));
-        $status     = htmlspecialchars($appt['Status']);
+        $id        = (int)$appt['ScheduleID'];
+        $name      = htmlspecialchars($appt['OfferingName']);
+        $desc      = nl2br(htmlspecialchars($appt['ServiceDescription']));
+        $currency  = htmlspecialchars($appt['Currency']);
+
+        // ** compute discounted range **
+        $min       = (float)$appt['MinPrice'];
+        $max       = (float)$appt['MaxPrice'];
+        $discount  = isset($appt['DiscountAmount']) 
+                     ? (float)$appt['DiscountAmount'] 
+                     : 0.0;
+        $minDisc   = max(0, $min - $discount);
+        $maxDisc   = max(0, $max - $discount);
+
+        $date      = date('Y-m-d', strtotime($appt['StartDate']));
+        $t0        = date('g:ia', strtotime($appt['StartDate']));
+        $t1        = date('g:ia', strtotime($appt['EndDate']));
+        $status    = htmlspecialchars($appt['Status']);
 
         // badge color
         switch ($status) {
@@ -77,16 +97,14 @@ try {
             default:            $badge = 'bg-secondary';
         }
 
-        // vehicle
-        $make    = htmlspecialchars($appt['Make']);
-        $model   = htmlspecialchars($appt['Model']);
-        $year    = (int)$appt['Year'];
-        $vin     = htmlspecialchars($appt['VINNumber']);
-
-        // employee
-        $empName        = $appt['EmployeeName'] ?: 'Not assigned';
-        $jobTitle       = htmlspecialchars($appt['JobTitle'] ?? '');
-        $specialization = htmlspecialchars($appt['Specialization'] ?? '');
+        // vehicle & employee
+        $make       = htmlspecialchars($appt['Make']);
+        $model      = htmlspecialchars($appt['Model']);
+        $year       = (int)$appt['Year'];
+        $vin        = htmlspecialchars($appt['VINNumber']);
+        $empName    = $appt['EmployeeName'] ?: 'Not assigned';
+        $jobTitle   = htmlspecialchars($appt['JobTitle'] ?? '');
+        $spec       = htmlspecialchars($appt['Specialization'] ?? '');
 
         $modalId = "apptModal{$id}";
 
@@ -95,7 +113,9 @@ try {
           <div class='card p-3'>
             <h5 class='card-title'>Service: {$name}</h5>
             <p class='card-text'>Date: {$date}</p>
-            <p class='card-text'>Status: <span class='badge {$badge}'>{$status}</span></p>
+            <p class='card-text'>
+              Status: <span class='badge {$badge}'>{$status}</span>
+            </p>
             <button class='btn btn-secondary btn-sm' data-bs-toggle='modal' data-bs-target='#{$modalId}'>
               View Details
             </button>
@@ -112,20 +132,25 @@ try {
               </div>
               <div class='modal-body'>
                 <div class='row'>
-                  <!-- Left: Appointment/Service -->
                   <div class='col-md-6'>
                     <h6>Appointment Details</h6>
                     <p><strong>Date:</strong> {$date}</p>
                     <p><strong>Time:</strong> {$t0} – {$t1}</p>
                     <p><strong>Status:</strong> <span class='badge {$badge}'>{$status}</span></p>
-                    <p><strong>Price:</strong> {$currency}{$price}</p>
+
+                    <!-- Price Range: -->
+                    <p><strong>Price Range:</strong>
+                      {$currency}" . number_format($minDisc,2) . "
+                      &nbsp;–&nbsp;
+                      {$currency}" . number_format($maxDisc,2) . "
+                    </p>
+
                     <p><strong>Description:</strong><br>{$desc}</p>
                     <p><strong>Assigned Employee:</strong> {$empName}";
-        if ($jobTitle)       echo "<br><small>Title: {$jobTitle}</small>";
-        if ($specialization) echo "<br><small>Specializes in: {$specialization}</small>";
+        if ($jobTitle)   echo "<br><small>Title: {$jobTitle}</small>";
+        if ($spec)       echo "<br><small>Specializes in: {$spec}</small>";
         echo "</p>
                   </div>
-                  <!-- Right: Vehicle -->
                   <div class='col-md-6'>
                     <h6>Vehicle Details</h6>
                     <p><strong>Make:</strong> {$make}</p>
@@ -137,11 +162,10 @@ try {
               </div>
               <div class='modal-footer'>
                 <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Close</button>";
-        // 5) Cancel button for non‑completed
         if ($status !== 'Completed') {
             echo "
-                <form method='POST' action='cancel_appointment.php' class='d-inline' 
-                      onsubmit=\"return confirm('Are you sure you want to cancel this appointment?');\">
+                <form method='POST' action='cancel_appointment.php' class='d-inline'
+                      onsubmit=\"return confirm('Cancel this appointment?');\">
                   <input type='hidden' name='schedule_id' value='{$id}'>
                   <button type='submit' class='btn btn-outline-danger'>Cancel Appointment</button>
                 </form>";

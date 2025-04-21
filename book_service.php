@@ -101,13 +101,19 @@ if ($dup->fetch()) {
 
 // 6) Fetch the service’s base price
 $priceStmt = $pdo->prepare("
-    SELECT MinPrice
+    SELECT MinPrice, MaxPrice
       FROM ServiceOffering
      WHERE OfferingID = :off
      LIMIT 1
 ");
 $priceStmt->execute([':off' => $serviceID]);
-$price = (float) $priceStmt->fetchColumn();
+$row = $priceStmt->fetch(PDO::FETCH_ASSOC);
+$minPrice = (float) $row['MinPrice'];
+$maxPrice = (float) $row['MaxPrice'];
+
+$discountedMin = max(0, $minPrice - $discount);
+$finalPriceDisplay = "$" . number_format($discountedMin, 2) . " – $" . number_format($maxPrice, 2);
+
 
 
 // … after you fetch $price …
@@ -131,7 +137,7 @@ if ($couponNum) {
 }
 
 // subtract (but never go below zero)
-$finalPrice = max(0, $price - $discount);
+$finalPrice = max(0, $MinPrice - $discount);
 
 // 7) Pull the vehicle inputs
 $vehicleMake  = $_POST['vehicle_make'];

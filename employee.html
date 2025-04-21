@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WrapLab Employee Dashboard</title>
+  
+  <!-- Bootstrap CSS -->
+  <link 
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+  />
+  <!-- Bootstrap Icons -->
+  <link 
+    rel="stylesheet" 
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
+  />
+  <!-- Google Fonts -->
+  <link 
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" 
+    rel="stylesheet"
+  >
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="d-flex">
+
+  <!-- SIDEBAR -->
+  <nav id="sidebar" class="bg-black text-white p-3">
+    <h3 class="text-purple mb-4">Employee Dashboard</h3>
+    <ul class="nav flex-column">
+      <li class="nav-item mb-2">
+        <a href="#my-tasks" class="nav-link text-white">My Tasks</a>
+      </li>
+      <li class="nav-item mb-2">
+        <a href="#set-availability" class="nav-link text-white">Set Availability</a>
+      </li>
+      <li class="nav-item mb-2">
+        <a href="#appointment-history" class="nav-link text-white">Appointment History</a>
+      </li>
+      <li class="nav-item mt-4">
+        <a href="login.html" class="nav-link text-purple">Log out</a>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <div class="flex-grow-1">
+
+    <div class="container-fluid p-4">
+      <!-- SECTION: My Tasks -->
+      <section id="my-tasks" class="mb-5">
+        <h3 class="mb-4">My Tasks</h3>
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Appointment</th>
+              <th>Customer</th>
+              <th>Service</th>
+              <th>Date</th>
+              <th>Current Status</th>
+              <th>Update Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Example static row; replace with dynamic content as needed -->
+            <tr>
+              <td>#A123</td>
+              <td>John Doe</td>
+              <td>Window Tint</td>
+              <td>2025-04-21</td>
+              <td><span class="badge bg-warning">In Progress</span></td>
+              <td>
+                <select class="form-select form-select-sm d-inline-block" style="width: 120px;">
+                  <option>Scheduled</option>
+                  <option selected>In Progress</option>
+                  <option>Completed</option>
+                </select>
+                <button class="btn btn-secondary btn-sm ms-1">Update</button>
+              </td>
+            </tr>
+            <tr>
+              <td>#A124</td>
+              <td>Jane Smith</td>
+              <td>Vinyl Wrap</td>
+              <td>2025-04-22</td>
+              <td><span class="badge bg-primary">Scheduled</span></td>
+              <td>
+                <select class="form-select form-select-sm d-inline-block" style="width: 120px;">
+                  <option selected>Scheduled</option>
+                  <option>In Progress</option>
+                  <option>Completed</option>
+                </select>
+                <button class="btn btn-secondary btn-sm ms-1">Update</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- SECTION: Set Availability -->
+      <section id="set-availability" class="mb-5">
+        <h3 class="mb-4">Set Your Availability</h3>
+        <p>Select the time slots during which you’re available for appointments so that these schedules can be shown to customers.</p>
+        <form class="row g-3">
+          <div class="col-md-4">
+            <label for="availabilityDate" class="form-label">Select Date</label>
+            <input type="date" id="availabilityDate" class="form-control" required>
+          </div>
+          <div class="col-md-4">
+            <label for="startTime" class="form-label">Start Time</label>
+            <input type="time" id="startTime" class="form-control" required>
+          </div>
+          <div class="col-md-4">
+            <label for="endTime" class="form-label">End Time</label>
+            <input type="time" id="endTime" class="form-control" required>
+          </div>
+          <div class="col-12 text-end">
+            <button type="submit" class="btn btn-primary">Set Availability</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- SECTION: Appointment History -->
+      <section id="appointment-history" class="mb-5">
+        <h3 class="mb-4">Appointment History</h3>
+        <div class="row">
+          <!-- Example Appointment Card -->
+          <div class="col-md-4 mb-4">
+            <div class="card p-3">
+              <h5>Appointment: #A122</h5>
+              <p>Service: Performance Tuning</p>
+              <p>Date: 2025-04-18</p>
+              <p>Status: <span class="badge bg-success">Completed</span></p>
+              <p>Details: Service completed successfully with positive feedback.</p>
+              <button class="btn btn-secondary btn-sm">View Full Details</button>
+            </div>
+          </div>
+          <!-- Another Appointment Card Example -->
+          <div class="col-md-4 mb-4">
+            <div class="card p-3">
+              <h5>Appointment: #A121</h5>
+              <p>Service: PPF</p>
+              <p>Date: 2025-04-17</p>
+              <p>Status: <span class="badge bg-success">Completed</span></p>
+              <p>Details: Appointment finished; report available for review.</p>
+              <button class="btn btn-secondary btn-sm">View Full Details</button>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

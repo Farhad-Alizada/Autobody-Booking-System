@@ -1,0 +1,29 @@
+[
+  {
+    "id": "vinyl-wrap",
+    "title": "Vinyl Wrap",
+    "image": "pictures/vinylwrap.png",
+    "price_range": "$1,9999 - $8,799"
+  },
+
+  {
+    "id": "window-tint",
+    "title": "Window Tint",
+    "image": "pictures/windowtint.png",
+    "price_range": "$99 - $275"
+  },
+
+  {
+    "id": "performance-tuning",
+    "title": "Performance Tuning",
+    "image": "pictures/performanceModifications.png",
+    "price_range": "$699 - $2,399"
+  },
+
+  {
+    "id": "ppf",
+    "title": "PPF",
+    "image": "pictures/ppf.png",
+    "price_range": "$699 - $6,599"
+  }
+]
